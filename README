@@ -1,0 +1,52 @@
+--------------------------------------------------------------------------
+						 Para rodar com o run.bash
+--------------------------------------------------------------------------	
+ 
+ 1- Alterar os valores das variáveis de entrada. Se quiser rodar para vários valores é só incluir todos com um espaço entre eles:
+ 
+ 	for L in 250 300 350 
+	do
+	
+	...
+	
+	done
+
+2 - Salvar
+3 - No terminal dar um ./run.bash
+
+--------------------------------------------------------------------------	
+			 			 Para rodar no terminal
+--------------------------------------------------------------------------	
+
+1- Compilar
+	
+	>> gcc -Wall -O3 gota_plano.c -lm -o gota3d.out 
+	
+2 - Rodando o programa
+
+	>> ./gota.out -L ${L} -R ${R} -a ${a} -h ${h} -w ${w} -fo ${fo} -CI ${CI} -s  12345567
+	
+--------------------------------------------------------------------------
+							Rotinas do programa
+--------------------------------------------------------------------------	
+
+create_pointers: 		Abre os ponteiros necessários
+free_pointers: 			Fecha os ponteiros usados
+initialization: 		Inicializa o programa
+initial_state: 			Gera a configuração inicial da gota
+xyz:					Salva as confs em .xyz (p/ vizualização no VMD, ...)
+save_conf:				Salva as confs em .dsf (p/ fazer figuras no gnuplot, ...)
+dynamics:				Dinâmica do Potts
+flip_spin:				Muda o spin do sítio
+add_to_interface:		Adiciona o sítio na interface
+remove_from_interface: 	Remove o sítio da interface
+measure_angle:			Calcula observáveis: Angulo de contato, raio da base ...
+calculate_energy:		Calcula a energia do sistema
+ calculate_e0: 			Calcula a energia do sistema sem a gota
+
+
+
+
+
+
+					
