@@ -40,8 +40,8 @@ void teste_flip_surface(int site,int s_teste,double delta_s, double delta);
 *                       Declarando parâmetros da simulação - técnicos                        *
 *********************************************************************************************/
 
-#define mc_steps   	       200000  // Número de passos de MC totais
-#define n_mesure       	   1000   // Intervalo para salvar medidas
+#define mc_steps   	       200  // Número de passos de MC totais
+#define n_mesure       	   10   // Intervalo para salvar medidas
 #define n_teste       	   99990   // Intervalo para salvar medidas
 
 #define temp           	   13.0  // Temperatura
@@ -119,7 +119,7 @@ int *inter_pos, *w_inter, *inter_mtx; // Sítios na interface
 //--------------------------------------------------------------------------------------------
 
 int n_w, n_o, n_s; //número de sítios água e óleo
-int int_label; //label do sítio na interface
+int int_label; //label da lista de sítios na interface
 int vol, vol_w, vol_o; // volumes calculados
 double Gw, Go;
 
