@@ -8,7 +8,7 @@ for L in 240
 for R in 50
 	do
 
-for a in  3 
+for a in  3
 	do
 	
 for h in 8
@@ -20,7 +20,7 @@ for w in 5
 for fo in 0.00
 	do
 
-for CI in 1 2 
+for CI in 1 
 	do
 # Create the directory
 dir_name="dados_${CI}_L_${L}_R_${R}_a_${a}_h_${h}_w_${w}_fo_${fo}"
@@ -38,6 +38,7 @@ cd $dir_name
 #===============================================================================
 
 ./gota.out -L ${L} -R ${R} -a ${a} -h ${h} -w ${w} -fo ${fo} -CI ${CI} -s  12345567
+#sbatch ./sbatch.sh -L ${L} -R ${R} -a ${a} -h ${h} -w ${w} -fo ${fo} -CI ${CI}
 
 # Change back to the original directory
 cd -

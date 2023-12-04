@@ -51,7 +51,7 @@ calculate_energy:		Calcula a energia do sistema
 - "...conf.dsf" salva os spins agua a cada n_measure
 - "...init.xyz" e "....xyz" são a primeira e aultima configuração, que podem 
 ser abertas por um vizualizador do tipo "vmd"  
-- "LAST.dsf" a mesma coisa que o "init.dsf" mas só guarda a ultima conf (os dsf saão mais faceis de usar para gnuplot doq os .xyz)
+- "LAST.dsf" a mesma coisa que o "init.xyz" mas só guarda a ultima conf (os dsf saão mais faceis de usar para gnuplot doq os .xyz)
 - "...0.00.dsf" guarda os observaveis que serão tratados no "graficos.py"
 - "...0.00.out" tem dados gerais de inicio e fim do sistema
 - "gota.out" e "gota3d.out" são os executaveis chamados pelo run.bash
