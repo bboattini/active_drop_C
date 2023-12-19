@@ -1158,14 +1158,38 @@ void xyz(int *s, int l, int m)
 *********************************************************************************************/
 void dynamics(int *s,int num_steps)
 {
-	int     j, hs;
+	int     i, j, k, hs, xi, xf, dx;
 /*	int 	z; */
 	int     site,s_site, s_teste, label,soma; 
 	int     nw,ns,no,ng;
-	double  temp_e, delta_s, delta_v, delta_g, delta_o, delta;
-	long int count=0;
+	int	 	x_CM, y_CM, z_CM;
+	double  temp_e, delta_s, delta_v, delta_g, delta_o, delta_m, delta;
+	long int count=0, count_w=0;
 
-  
+	x_CM = 0.0;
+	y_CM = 0.0;
+	z_CM = 0.0;
+	for(i=0;i<=l;i++) 
+	{
+		for(j=0;j<=l;j++) 
+		{
+      		for(k=h_base;k<l;k++) 
+			{
+				site = i +j*l + k*l2;
+				if( (s[site]==1) ) 
+				{
+					x_CM = x_CM + site%l; 		//soma sobre posições em x
+					y_CM = y_CM + (site/l)%l;	//soma sobre posições em y
+					z_CM = z_CM + site/l2;		//soma sobre posições em z
+					count_w++;
+				}//fim do IF
+			}//fim do FOR
+		}//fim do FOR
+	}//fim do FOR
+	x_CM = x_CM/count_w;
+	y_CM = y_CM/count_w;
+	z_CM = z_CM/count_w;
+
 	for(j = 0; j < t_vol ; ++j)
     {
 
@@ -1176,6 +1200,7 @@ void dynamics(int *s,int num_steps)
 		label = (int) (FRANDOM*int_label);
 		site = w_inter[label];
 		hs = (site/l2-h_base);
+		
 /*		z = site/l2;*/
 		s_site=s[site];
 
@@ -1189,6 +1214,7 @@ void dynamics(int *s,int num_steps)
 		delta_v=0;
 		delta_o=0;
 		delta_g=0;
+		delta_m=0;
       
 		nw=nv_w[site];
 		no=nv_o[site];
@@ -1248,7 +1274,17 @@ void dynamics(int *s,int num_steps)
 
 			if (s_site==0)
 			{
-
+				xf = site % l;
+				xi = (xf > x_CM) ? (xf - 1 + l) % l : (xf + 1) % l;
+				dx = xf - xi;
+				// Adjust dx for periodic boundary conditions
+				if (dx > l/2) {
+					dx -= l;
+				} else if (dx < -l/2) {
+					dx += l;
+				}
+				// Set delta_m based on the sign of dx
+				delta_m = (dx > 0) ? -Gw * dx : Gw * dx;
 				delta_g = Gw*hs;
 				delta_s = (ng-nw)*eps_WG + ns*(eps_SW-eps_SG) + (eps_WO-eps_OG)*no;
 /*				delta_v = (1+2*(vol-t_vol))*Lambda_w; // Ganho um  líquido*/
@@ -1258,7 +1294,17 @@ void dynamics(int *s,int num_steps)
 
 			else //if (s_site==1)
 			{
-
+				xi = site % l;
+				xf = (xi > x_CM) ? (xi - 1 + l) % l : (xi + 1) % l;
+				dx = xf - xi;
+				// Adjust dx for periodic boundary conditions
+				if (dx > l/2) {
+					dx -= l;
+				} else if (dx < -l/2) {
+					dx += l;
+				}
+				// Set delta_m based on the sign of dx
+				delta_m = (dx > 0) ? -Gw * dx : Gw * dx;
 				delta_g = -Gw*hs; 
 				delta_s = (nw-ng)*eps_WG + ns*(eps_SG-eps_SW) + (eps_OG-eps_WO)*no;
 /*				delta_v = (1-2*(vol-t_vol))*Lambda_w; // Perco um líquido*/
