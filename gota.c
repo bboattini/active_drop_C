@@ -24,7 +24,7 @@ void openfiles(void);
 void initialization(void);
 void initial_state(int *s, int l, int rg, int initialstate);
 void xyz(int *s, int l, int m);
-void dynamics (int *s,int num_steps);
+void dynamics (int *s,int num_steps, double Aw);
 void flip_spin (long site, long new_s);
 void add_to_interface(int site);
 void remove_from_interface(int site);
@@ -121,7 +121,7 @@ int *inter_pos, *w_inter, *inter_mtx; // Sítios na interface
 int n_w, n_o, n_s; //número de sítios água e óleo
 int int_label; //label da lista de sítios na interface
 int vol, vol_w, vol_o; // volumes calculados
-double Gw, Go;
+double Gw, Go, Aw;
 
 //--------------------------------------------------------------------------------------------
 // Variaveis dos observáveis
@@ -184,7 +184,8 @@ int main(int argc,char *argv[])
       		else if (!strcmp(argv[i],"-a"))  a=atoi(argv[++i]);
       		else if (!strcmp(argv[i],"-h"))  h=atoi(argv[++i]);
       		else if (!strcmp(argv[i],"-w"))  w=atoi(argv[++i]);
-      		else if (!strcmp(argv[i],"-fo")) f_o=atof(argv[++i]);
+			// Substituir Aw por f_o para recuperar a forma original
+      		else if (!strcmp(argv[i],"-fo")) Aw=atof(argv[++i]);
       		else if (!strcmp(argv[i],"-CI")) initialstate=atoi(argv[++i]);
       		else if (!strcmp(argv[i],"-s"))  seed=atol(argv[++i]);
       		else {
@@ -204,19 +205,20 @@ int main(int argc,char *argv[])
     	}
 
 		rg = (int)r0;
+		f_o = 0.0;
 
-		sprintf(output_file1,"%sgota_3d_L_%d_R_%d_a_%d_h_%d_w_%d_fo_%3.2f.out",CI,l,rg,a,h,w,f_o);	
+		sprintf(output_file1,"%sgota_3d_L_%d_R_%d_a_%d_h_%d_w_%d_fo_%3.2f.out",CI,l,rg,a,h,w,Aw);	
 		fout = fopen(output_file1,"w");	
 
 		fflush(fout);
 
-/*		sprintf(output_file1,"%sgota_3d_L_%d_R_%d_a_%d_h_%d_w_%d_fo_%3.2f_oil.out",CI,l,rg,a,h,w,f_o);	*/
+/*		sprintf(output_file1,"%sgota_3d_L_%d_R_%d_a_%d_h_%d_w_%d_fo_%3.2f_oil.out",CI,l,rg,a,h,w,Aw);	*/
 /*		foil = fopen(output_file1,"w");	*/
 /*		fprintf(foil ,"#  site   s[site]    s_teste    nw     no    ng    ns      ei     ef     ef-ei   delta_s     delta\n");*/
 
 /*		fflush(foil);*/
 
-/*		sprintf(output_file1,"%sgota_3d_L_%d_R_%d_a_%d_h_%d_w_%d_fo_%3.2f_water.out",CI,l,rg,a,h,w,f_o);	*/
+/*		sprintf(output_file1,"%sgota_3d_L_%d_R_%d_a_%d_h_%d_w_%d_fo_%3.2f_water.out",CI,l,rg,a,h,w,Aw);	*/
 /*		fwat = fopen(output_file1,"w");	*/
 /*		fprintf(fwat ,"#  site   s[site]    s_teste    nw     no    ng    ns      ei     ef     ef-ei   delta_s     delta\n");*/
 
@@ -251,7 +253,8 @@ int main(int argc,char *argv[])
     	fprintf(fout,"V_w    : %d\n",t_vol_w);
     	fprintf(fout,"V_o    : %d\n",t_vol_o);
     	fprintf(fout,"fw     : %f\n",f_w);
-    	fprintf(fout,"fo     : %f\n",f_o);
+		// Substituir Aw por f_o para recuperar a forma original
+    	fprintf(fout,"fo     : %f\n",Aw);
     	fprintf(fout,"h      : %d\n",h);
     	fprintf(fout,"w      : %d\n",w);
     	fprintf(fout,"a      : %d\n",a);
@@ -337,7 +340,8 @@ int main(int argc,char *argv[])
 		Gw=GW;
 		Go=GO;
 
-		dynamics(s,i);
+
+		dynamics(s,i,Aw);
 
 		fw = (float)vol_w/(vol);
 		fo = (float)vol_o/(vol);
@@ -416,7 +420,7 @@ void openfiles(void)
 	file_in = 1;
 
 	// Nome do arquivo - o identifier tem que estar correto!
-	sprintf(input_file,"%sgota_3d_L_%d_R_%d_a_%d_h_%d_w_%d_fo_%3.2f_LAST.dsf",CI,l,rg,a,h,w,f_o);
+	sprintf(input_file,"%sgota_3d_L_%d_R_%d_a_%d_h_%d_w_%d_fo_%3.2f_LAST.dsf",CI,l,rg,a,h,w,Aw);
   
  	 // Abrindo entrada
 	if((fp_in = fopen(input_file,"r")) == NULL)
@@ -453,7 +457,7 @@ void openfiles(void)
 	    fflush(stdout); 
   
     	// Nome do arquivo de saída 
-		sprintf(output_file1,"%sgota_3d_L_%d_R_%d_a_%d_h_%d_w_%d_fo_%3.2f.dsf",CI,l,rg,a,h,w,f_o);
+		sprintf(output_file1,"%sgota_3d_L_%d_R_%d_a_%d_h_%d_w_%d_fo_%3.2f.dsf",CI,l,rg,a,h,w,Aw);
     
 		fp1 = fopen(output_file1,"a");
 		fprintf(fp1,"### Continuando..\n");
@@ -470,7 +474,7 @@ void openfiles(void)
 	if(file_in==0)  // Se é uma simulação nova
 	{
 		// Arquivo dsf - Observáveis  
-		sprintf(output_file1,"%sgota_3d_L_%d_R_%d_a_%d_h_%d_w_%d_fo_%3.2f.dsf",CI,l,rg,a,h,w,f_o);
+		sprintf(output_file1,"%sgota_3d_L_%d_R_%d_a_%d_h_%d_w_%d_fo_%3.2f.dsf",CI,l,rg,a,h,w,Aw);
 
 		fflush(stdout);
 		fp1 = fopen(output_file1,"w"); //fp1 é o localizador desse arquivo
@@ -500,7 +504,7 @@ void openfiles(void)
 		fflush(stdout);
 
       // Arquivo de Conficguração
-		sprintf(output_file1,"%sgota_3d_L_%d_R_%d_a_%d_h_%d_w_%d_fo_%3.2f_conf.dsf", CI,l,rg,a,h,w,f_o);
+		sprintf(output_file1,"%sgota_3d_L_%d_R_%d_a_%d_h_%d_w_%d_fo_%3.2f_conf.dsf", CI,l,rg,a,h,w,Aw);
 
 		fconf = fopen(output_file1,"w");
 
@@ -532,13 +536,13 @@ void openfiles(void)
 /*#endif*/
 
 		// Arquivo xyz init
-        sprintf(output_file1,"%sgota_3d_L_%d_R_%d_a_%d_h_%d_w_%d_fo_%3.2f_init.xyz",CI,l,rg,a,h,w,f_o);	
+        sprintf(output_file1,"%sgota_3d_L_%d_R_%d_a_%d_h_%d_w_%d_fo_%3.2f_init.xyz",CI,l,rg,a,h,w,Aw);	
 		finit = fopen(output_file1,"w");	
 
 		fflush(finit);
 
 		// Arquivo xyz
-        sprintf(output_file1,"%sgota_3d_L_%d_R_%d_a_%d_h_%d_w_%d_fo_%3.2f.xyz",CI,l,rg,a,h,w,f_o);	
+        sprintf(output_file1,"%sgota_3d_L_%d_R_%d_a_%d_h_%d_w_%d_fo_%3.2f.xyz",CI,l,rg,a,h,w,Aw);	
 		fxyz = fopen(output_file1,"w");	
 
 		fflush(fxyz);
@@ -1156,7 +1160,7 @@ void xyz(int *s, int l, int m)
 /*********************************************************************************************
 *                               Rotina que faz a dinâmica do MC                              *
 *********************************************************************************************/
-void dynamics(int *s,int num_steps)
+void dynamics(int *s,int num_steps, double Aw)
 {
 	int     i, j, k, hs, xi, xf, dx;
 /*	int 	z; */
@@ -1275,16 +1279,18 @@ void dynamics(int *s,int num_steps)
 			if (s_site==0)
 			{
 				xf = site % l;
-				xi = (xf > x_CM) ? (xf - 1 + l) % l : (xf + 1) % l;
-				dx = xf - xi;
+				dx = xf - x_CM;
 				// Adjust dx for periodic boundary conditions
 				if (dx > l/2) {
 					dx -= l;
 				} else if (dx < -l/2) {
 					dx += l;
 				}
+				xi = (dx > 0) ? (xf - 1) : (xf + 1);
+				dx = xf - xi;
+				
 				// Set delta_m based on the sign of dx
-				delta_m = (dx > 0) ? -Gw * dx : Gw * dx;
+				delta_m = -Aw * dx;
 				delta_g = Gw*hs;
 				delta_s = (ng-nw)*eps_WG + ns*(eps_SW-eps_SG) + (eps_WO-eps_OG)*no;
 /*				delta_v = (1+2*(vol-t_vol))*Lambda_w; // Ganho um  líquido*/
@@ -1295,16 +1301,18 @@ void dynamics(int *s,int num_steps)
 			else //if (s_site==1)
 			{
 				xi = site % l;
-				xf = (xi > x_CM) ? (xi - 1 + l) % l : (xi + 1) % l;
-				dx = xf - xi;
+				dx = xi - x_CM;
 				// Adjust dx for periodic boundary conditions
 				if (dx > l/2) {
 					dx -= l;
 				} else if (dx < -l/2) {
 					dx += l;
 				}
+				xf = (dx > 0) ? (xi + 1) : (xi - 1);
+				dx = xf - xi;
+				
 				// Set delta_m based on the sign of dx
-				delta_m = (dx > 0) ? -Gw * dx : Gw * dx;
+				delta_m = -Aw * dx;
 				delta_g = -Gw*hs; 
 				delta_s = (nw-ng)*eps_WG + ns*(eps_SG-eps_SW) + (eps_OG-eps_WO)*no;
 /*				delta_v = (1-2*(vol-t_vol))*Lambda_w; // Perco um líquido*/
@@ -1374,7 +1382,7 @@ void dynamics(int *s,int num_steps)
 			delta_v = 100000.0;
 		}//fim do else
  
-		delta=delta_v+delta_s+delta_g+delta_o;
+		delta=delta_v+delta_s+delta_g+delta_o+delta_m;
 
 //--------------------------------------------------------------------------------------------
 //  Testando a troca
@@ -2550,7 +2558,7 @@ void save_conf(int num_steps,int iout)
   
 	if(iout==1) 
 	{	
-		sprintf(output_file1,"%sgota_3d_L_%d_R_%d_a_%d_h_%d_w_%d_fo_%3.2f_LAST.dsf",CI,l,rg,a,h,w, f_o);
+		sprintf(output_file1,"%sgota_3d_L_%d_R_%d_a_%d_h_%d_w_%d_fo_%3.2f_LAST.dsf",CI,l,rg,a,h,w,Aw);
 		flast = fopen(output_file1,"w");
 		fprintf(flast,"# %d\n",num_steps);
 

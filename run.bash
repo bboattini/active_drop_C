@@ -17,10 +17,10 @@ for h in 8
 for w in 5
 	do
 
-for fo in 0.00
+for fo in 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0
 	do
 
-for CI in 1 2
+for CI in 2
 	do
 # Create the directory
 dir_name="dados_${CI}_L_${L}_R_${R}_a_${a}_h_${h}_w_${w}_fo_${fo}"
