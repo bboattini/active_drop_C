@@ -17,7 +17,7 @@ for h in 8
 for w in 5
 	do
 
-for fo in 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0
+for fo in 0.001 0.01 10
 	do
 
 for CI in 2

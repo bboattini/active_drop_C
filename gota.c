@@ -1166,33 +1166,88 @@ void dynamics(int *s,int num_steps, double Aw)
 /*	int 	z; */
 	int     site,s_site, s_teste, label,soma; 
 	int     nw,ns,no,ng;
-	int	 	x_CM, y_CM, z_CM;
+	double	x_CM, y_CM, z_CM;
 	double  temp_e, delta_s, delta_v, delta_g, delta_o, delta_m, delta;
 	long int count=0, count_w=0;
+	int x_just_air = 0, y_just_air = 0, x_pos, y_pos;
 
 	x_CM = 0.0;
 	y_CM = 0.0;
 	z_CM = 0.0;
-	for(i=0;i<=l;i++) 
+	// Iterate over yz planes to find the first x plane without water
+	for(i=0; i<l; i++) 
 	{
-		for(j=0;j<=l;j++) 
+		x_just_air = i;
+		for(j=0;j<l;j++) 
 		{
-      		for(k=h_base;k<l;k++) 
+			for(k=h_base; k<l; k++) 
 			{
 				site = i +j*l + k*l2;
 				if( (s[site]==1) ) 
 				{
-					x_CM = x_CM + site%l; 		//soma sobre posições em x
-					y_CM = y_CM + (site/l)%l;	//soma sobre posições em y
-					z_CM = z_CM + site/l2;		//soma sobre posições em z
+					x_just_air = -1;
+					break; // Exit the inner loop
+				}
+			}
+			if(x_just_air == -1) break; // Exit the outer loop
+		}
+		if(x_just_air > -1) break; // Exit the outermost loop
+	}
+
+	// Iterate over xz planes to find the first y plane without water
+	for(j=0; j<l; j++) 
+	{
+		y_just_air = j;
+		for(i=0;i<l;i++) 
+		{
+			for(k=h_base; k<l; k++) 
+			{
+				site = i +j*l + k*l2;
+				if( (s[site]==1) ) 
+				{
+					y_just_air = -1;
+					break; // Exit the inner loop
+				}
+			}
+			if(y_just_air == -1) break; // Exit the outer loop
+		}
+		if(y_just_air > -1) break; // Exit the outermost loop
+	}
+
+	for(i=0;i<=l;i++) 
+	{
+		for(j=0;j<=l;j++) 
+		{
+			for(k=h_base;k<l;k++) 
+			{
+				site = i +j*l + k*l2;
+				if( (s[site]==1) ) 
+				{
 					count_w++;
-				}//fim do IF
-			}//fim do FOR
-		}//fim do FOR
-	}//fim do FOR
-	x_CM = x_CM/count_w;
-	y_CM = y_CM/count_w;
-	z_CM = z_CM/count_w;
+
+					if(i < x_just_air){
+						x_pos = i + l;
+					} else
+					{
+						x_pos = i;
+					}
+					if(j < y_just_air){
+						y_pos = j + l;
+					} else
+					{
+						y_pos = j;
+					}
+					x_CM = x_CM + x_pos;
+					y_CM = y_CM + y_pos;
+					z_CM = z_CM + k;
+            	}
+			}
+		}
+	}
+	// Calculate center of mass and shift back to original range
+	x_CM = fmod((float) x_CM/(float) count_w,l);
+	y_CM = fmod((float) y_CM/(float) count_w,l);
+	z_CM = fmod((float) z_CM/(float) count_w,l);
 
 	for(j = 0; j < t_vol ; ++j)
     {
@@ -1301,7 +1356,7 @@ void dynamics(int *s,int num_steps, double Aw)
 			else //if (s_site==1)
 			{
 				xi = site % l;
-				dx = xi - x_CM;
+				dx = x_CM - xi;
 				// Adjust dx for periodic boundary conditions
 				if (dx > l/2) {
 					dx -= l;
@@ -1906,6 +1961,7 @@ void measure_angle(int num_steps)
 	int htest;
 	double vol_p_w,vol_p_o;
 	double x_CM, y_CM, z_CM;
+	int x_just_air , y_just_air , x_pos, y_pos;
 
 // -------------------------------------------------------------------------------------------
 // Determinando a altura do filme para água e óleo
@@ -2322,27 +2378,81 @@ void measure_angle(int num_steps)
 	x_CM = 0.0;
 	y_CM = 0.0;
 	z_CM = 0.0;
-	for(i=0;i<=l;i++) 
+	count_w = 0;
+	// Iterate over yz planes to find the first x plane without water
+	for(i=0; i<l; i++) 
 	{
-		for(j=0;j<=l;j++) 
+		x_just_air = i;
+		for(j=0;j<l;j++) 
 		{
-      		for(k=htest;k<l;k++) 
+			for(k=h_base; k<l; k++) 
 			{
 				site = i +j*l + k*l2;
 				if( (s[site]==1) ) 
 				{
-					x_CM = x_CM + site%l; 		//soma sobre posições em x
-					y_CM = y_CM + (site/l)%l;	//soma sobre posições em y
-					z_CM = z_CM + site/l2;		//soma sobre posições em z
-				}//fim do IF
-				//if( (s[site]==2) ) //adicionar regra para oleo;
+					x_just_air = -1;
+					break; // Exit the inner loop
+				}
+			}
+			if(x_just_air == -1) break; // Exit the outer loop
+		}
+		if(x_just_air > -1) break; // Exit the outermost loop
+	}
 
-			}//fim do FOR
-		}//fim do FOR
-	}//fim do FOR
-	x_CM = x_CM/(float)count_w;
-	y_CM = y_CM/(float)count_w;
-	z_CM = z_CM/(float)count_w;
+	// Iterate over xz planes to find the first y plane without water
+	for(j=0; j<l; j++) 
+	{
+		y_just_air = j;
+		for(i=0;i<l;i++) 
+		{
+			for(k=h_base; k<l; k++) 
+			{
+				site = i +j*l + k*l2;
+				if( (s[site]==1) ) 
+				{
+					y_just_air = -1;
+					break; // Exit the inner loop
+				}
+			}
+			if(y_just_air == -1) break; // Exit the outer loop
+		}
+		if(y_just_air > -1) break; // Exit the outermost loop
+	}
+
+	for(i=0;i<=l;i++) 
+	{
+		for(j=0;j<=l;j++) 
+		{
+			for(k=h_base;k<l;k++) 
+			{
+				site = i +j*l + k*l2;
+				if( (s[site]==1) ) 
+				{
+					count_w++;
+
+					if(i < x_just_air){
+						x_pos = i + l;
+					} else
+					{
+						x_pos = i;
+					}
+					if(j < y_just_air){
+						y_pos = j + l;
+					} else
+					{
+						y_pos = j;
+					}
+					x_CM = x_CM + x_pos;
+					y_CM = y_CM + y_pos;
+					z_CM = z_CM + k;
+            	}
+			}
+		}
+	}
+	// Calculate center of mass and shift back to original range
+	x_CM = fmod((float) x_CM/(float) count_w,l);
+	y_CM = fmod((float) y_CM/(float) count_w,l);
+	z_CM = fmod((float) z_CM/(float) count_w,l);
 // -------------------------------------------------------------------------------------------
   
 	fprintf(fp1,"%8d %d %d %d %f %f %f %f %f %f %f %f %f %f %f %f %f %d %d %d %d %f %f %f %f %f %f %f %f %f %f %f %f %f\n", num_steps, (int)vol, (int)vol_w, (int)vol_o, calculate_energy(), base_radius_x, base_radius_y, base_radius_x_o, base_radius_y_o, rx, ry, rx_o, ry_o, angle_x, angle_y, angle_x_o, angle_y_o, num_pil_x,num_pil_y, num_pil_x_o,num_pil_y_o, volume_below, volume_below_o, volume_res,volume_res_o, per_w, per_o, frac_w, frac_o, vol_p_w, vol_p_o, x_CM, y_CM, z_CM);
