@@ -8,7 +8,7 @@ for L in 240
 for R in 50
 	do
 
-for a in  3 8
+for a in  3
 	do
 	
 for h in 8
@@ -17,7 +17,7 @@ for h in 8
 for w in 5
 	do
 
-for fo in 0.001 0.01 10
+for fo in 1
 	do
 
 for CI in 2

@@ -1162,7 +1162,7 @@ void xyz(int *s, int l, int m)
 *********************************************************************************************/
 void dynamics(int *s,int num_steps, double Aw)
 {
-	int     i, j, k, hs, xi, xf, dx;
+	int     i, j, k, hs, xi, xf, dx, yi, yf, dy;
 /*	int 	z; */
 	int     site,s_site, s_teste, label,soma; 
 	int     nw,ns,no,ng;
@@ -1343,9 +1343,20 @@ void dynamics(int *s,int num_steps, double Aw)
 				}
 				xi = (dx > 0) ? (xf - 1) : (xf + 1);
 				dx = xf - xi;
+
+				yf = (site/l) % l;
+				dy = yf - y_CM;
+				// Adjust dx for periodic boundary conditions
+				if (dy > l/2) {
+					dy -= l;
+				} else if (dy < -l/2) {
+					dy += l;
+				}
+				yi = (dy > 0) ? (yf - 1) : (yf + 1);
+				dy = yf - yi;
 				
 				// Set delta_m based on the sign of dx
-				delta_m = -Aw * dx;
+				delta_m = -Aw * (1*dx + 1*dy); // Displacement dot versor (x=1,y=1), is this rigth?
 				delta_g = Gw*hs;
 				delta_s = (ng-nw)*eps_WG + ns*(eps_SW-eps_SG) + (eps_WO-eps_OG)*no;
 /*				delta_v = (1+2*(vol-t_vol))*Lambda_w; // Ganho um  líquido*/
@@ -1365,9 +1376,20 @@ void dynamics(int *s,int num_steps, double Aw)
 				}
 				xf = (dx > 0) ? (xi + 1) : (xi - 1);
 				dx = xf - xi;
+
+				yi = (site/l) % l;
+				dy = y_CM - yi;
+				// Adjust dx for periodic boundary conditions
+				if (dy > l/2) {
+					dy -= l;
+				} else if (dy < -l/2) {
+					dy += l;
+				}
+				yf = (dy > 0) ? (yi + 1) : (yi - 1);
+				dy = yf - yi;
 				
 				// Set delta_m based on the sign of dx
-				delta_m = -Aw * dx;
+				delta_m = -Aw * (1*dx + 1*dy); // Displacement vector dot versor (x=1,y=1), is this rigth?
 				delta_g = -Gw*hs; 
 				delta_s = (nw-ng)*eps_WG + ns*(eps_SG-eps_SW) + (eps_OG-eps_WO)*no;
 /*				delta_v = (1-2*(vol-t_vol))*Lambda_w; // Perco um líquido*/
