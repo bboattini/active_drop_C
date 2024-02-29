@@ -30,6 +30,7 @@ void add_to_interface(int site);
 void remove_from_interface(int site);
 void free_pointers(void);
 void measure_angle(int num_steps);
+int neighbor_value(int site, int index);
 double calculate_energy(void);
 void save_conf(int num_steps, int iout);
 void teste_flip_droplet(int site,int s_teste,double delta_s, double delta);
@@ -1162,92 +1163,12 @@ void xyz(int *s, int l, int m)
 *********************************************************************************************/
 void dynamics(int *s,int num_steps, double Aw)
 {
-	int     i, j, k, hs, xi, xf, dx;
+	int     j, hs, xi, xf, dx;
 /*	int 	z; */
-	int     site,s_site, s_teste, label,soma; 
+	int     site, neigh_site , neigh_index,s_site, s_teste, label,soma, s_neigh; 
 	int     nw,ns,no,ng;
-	double	x_CM, y_CM, z_CM;
 	double  temp_e, delta_s, delta_v, delta_g, delta_o, delta_m, delta;
 	long int count=0, count_w=0;
-	int x_just_air = 0, y_just_air = 0, x_pos, y_pos;
-
-	x_CM = 0.0;
-	y_CM = 0.0;
-	z_CM = 0.0;
-	// Iterate over yz planes to find the first x plane without water
-	for(i=0; i<l; i++) 
-	{
-		x_just_air = i;
-		for(j=0;j<l;j++) 
-		{
-			for(k=h_base; k<l; k++) 
-			{
-				site = i +j*l + k*l2;
-				if( (s[site]==1) ) 
-				{
-					x_just_air = -1;
-					break; // Exit the inner loop
-				}
-			}
-			if(x_just_air == -1) break; // Exit the outer loop
-		}
-		if(x_just_air > -1) break; // Exit the outermost loop
-	}
-
-	// Iterate over xz planes to find the first y plane without water
-	for(j=0; j<l; j++) 
-	{
-		y_just_air = j;
-		for(i=0;i<l;i++) 
-		{
-			for(k=h_base; k<l; k++) 
-			{
-				site = i +j*l + k*l2;
-				if( (s[site]==1) ) 
-				{
-					y_just_air = -1;
-					break; // Exit the inner loop
-				}
-			}
-			if(y_just_air == -1) break; // Exit the outer loop
-		}
-		if(y_just_air > -1) break; // Exit the outermost loop
-	}
-
-	for(i=0;i<=l;i++) 
-	{
-		for(j=0;j<=l;j++) 
-		{
-			for(k=h_base;k<l;k++) 
-			{
-				site = i +j*l + k*l2;
-				if( (s[site]==1) ) 
-				{
-					count_w++;
-
-					if(i < x_just_air){
-						x_pos = i + l;
-					} else
-					{
-						x_pos = i;
-					}
-					if(j < y_just_air){
-						y_pos = j + l;
-					} else
-					{
-						y_pos = j;
-					}
-					x_CM = x_CM + x_pos;
-					y_CM = y_CM + y_pos;
-					z_CM = z_CM + k;
-            	}
-			}
-		}
-	}
-	// Calculate center of mass and shift back to original range
-	x_CM = fmod((float) x_CM/(float) count_w,l);
-	y_CM = fmod((float) y_CM/(float) count_w,l);
-	z_CM = fmod((float) z_CM/(float) count_w,l);
 
 	for(j = 0; j < t_vol ; ++j)
     {
@@ -1333,16 +1254,25 @@ void dynamics(int *s,int num_steps, double Aw)
 
 			if (s_site==0)
 			{
+				s_neigh = -1;
+				while (s_neigh!=1)
+				{
+					neigh_index = (int) (FRANDOM*27);
+					if (neigh_index != 13){
+						neigh_site = neighbor_value(site, neigh_index);
+						s_neigh = s[neigh_site];
+					}
+				}
+				printf("s_site = %d\t s_neigh = %d\n", s_site, s_neigh);
+				xi = neigh_site % l;
 				xf = site % l;
-				dx = xf - x_CM;
+				dx = xf - xi;
 				// Adjust dx for periodic boundary conditions
 				if (dx > l/2) {
 					dx -= l;
 				} else if (dx < -l/2) {
 					dx += l;
 				}
-				xi = (dx > 0) ? (xf - 1) : (xf + 1);
-				dx = xf - xi;
 				
 				// Set delta_m based on the sign of dx
 				delta_m = -Aw * dx;
@@ -1355,16 +1285,26 @@ void dynamics(int *s,int num_steps, double Aw)
 
 			else //if (s_site==1)
 			{
+				s_neigh = -1;
+				while (s_neigh!=1)
+				{
+					neigh_index = (int) (FRANDOM*27);
+					if (neigh_index != 13){
+						neigh_site = neighbor_value(site, neigh_index);
+						s_neigh = s[neigh_site];
+					}
+				}
+				printf("s_site = %d\t s_neigh = %d\n", s_site, s_neigh);
+
+				xf = neigh_site % l;
 				xi = site % l;
-				dx = x_CM - xi;
+				dx = xf - xi;
 				// Adjust dx for periodic boundary conditions
 				if (dx > l/2) {
 					dx -= l;
 				} else if (dx < -l/2) {
 					dx += l;
 				}
-				xf = (dx > 0) ? (xi + 1) : (xi - 1);
-				dx = xf - xi;
 				
 				// Set delta_m based on the sign of dx
 				delta_m = -Aw * dx;
@@ -2756,6 +2696,29 @@ void teste_flip_surface(int site, int s_teste, double delta_s, double delta)
 	fprintf(fwat ,"%10d %2d %2d %3d %3d %3d %3d %6.2f %6.2f %6.2f %6.2f %6.2f\n", site, s[site], s_teste, nw, no, ng, ns, ei, ef, ef-ei, delta_s, delta);
 
 	return;
+}
+
+/*********************************************************************************************
+*                              Função que calcula o sítio vizinho                            *
+*********************************************************************************************/
+int neighbor_value(int site, int index)
+{
+	int x, y, z, xn, yn, zn, neigh;
+	int ln = 3, ln2;
+
+	ln2 = ln*ln;
+	
+	x = site%l;
+	y = (site/l)%l;
+	z = site/l2;
+
+	xn = (index%ln - 1 + x + l)%l;
+	yn = ((index/ln)%ln - 1 + y + l)%l;
+	zn = (index/ln2 - 1 + z + l)%l;
+
+	neigh = xn + yn*l + zn*l2;
+
+	return neigh;
 }
 
 
