@@ -40,7 +40,7 @@ void teste_flip_surface(int site,int s_teste,double delta_s, double delta);
 *                       Declarando parâmetros da simulação - técnicos                        *
 *********************************************************************************************/
 
-#define mc_steps   	       1000  // Número de passos de MC totais
+#define mc_steps   	       10000  // Número de passos de MC totais
 #define n_mesure       	   10   // Intervalo para salvar medidas
 #define n_teste       	   99990   // Intervalo para salvar medidas
 
@@ -101,6 +101,7 @@ double v0, v0_w, v0_o; // volumes desejados
 int t_vol, t_vol_w, t_vol_o; // volumes desejados
 double f_w, f_o;                // Frações de água e óleo
 double fw, fo;                // Frações de água e óleo
+int px_CM= -1, py_CM= -1, pz_CM= -1; // Memoria do Centro de massa da gota
 
 double T;
 
@@ -1166,7 +1167,7 @@ void dynamics(int *s,int num_steps, double Aw)
 /*	int 	z; */
 	int     site,s_site, s_teste, label,soma; 
 	int     nw,ns,no,ng;
-	double	x_CM, y_CM, z_CM;
+	double	x_CM, y_CM, z_CM, P, Px, Py;
 	double  temp_e, delta_s, delta_v, delta_g, delta_o, delta_m, delta;
 	long int count=0, count_w=0;
 	int x_just_air = 0, y_just_air = 0, x_pos, y_pos;
@@ -1248,6 +1249,18 @@ void dynamics(int *s,int num_steps, double Aw)
 	x_CM = fmod((float) x_CM/(float) count_w,l);
 	y_CM = fmod((float) y_CM/(float) count_w,l);
 	z_CM = fmod((float) z_CM/(float) count_w,l);
+
+	if (px_CM == -1 && py_CM == -1 && pz_CM == -1)
+	{
+		px_CM = x_CM;
+		py_CM = y_CM;
+		pz_CM = z_CM;
+	}
+
+	// Calculate the polarity vector
+	Px = (x_CM - px_CM);
+	Py = (y_CM - py_CM);
+	P = sqrt(Px*Px + Py*Py);
 
 	for(j = 0; j < t_vol ; ++j)
     {
@@ -1356,7 +1369,7 @@ void dynamics(int *s,int num_steps, double Aw)
 				dy = yf - yi;
 				
 				// Set delta_m based on the sign of dx
-				delta_m = -Aw * (1*dx + 1*dy); // Displacement dot versor (x=1,y=1), is this rigth?
+				delta_m = -Aw * (Px*dx + Py*dy)/P; // Displacement dot versor twords polarity, is this rigth?
 				delta_g = Gw*hs;
 				delta_s = (ng-nw)*eps_WG + ns*(eps_SW-eps_SG) + (eps_WO-eps_OG)*no;
 /*				delta_v = (1+2*(vol-t_vol))*Lambda_w; // Ganho um  líquido*/
@@ -1389,7 +1402,7 @@ void dynamics(int *s,int num_steps, double Aw)
 				dy = yf - yi;
 				
 				// Set delta_m based on the sign of dx
-				delta_m = -Aw * (1*dx + 1*dy); // Displacement vector dot versor (x=1,y=1), is this rigth?
+				delta_m = -Aw * (Px*dx + Py*dy)/P; // Displacement vector dot versor (x=1,y=1), is this rigth?
 				delta_g = -Gw*hs; 
 				delta_s = (nw-ng)*eps_WG + ns*(eps_SG-eps_SW) + (eps_OG-eps_WO)*no;
 /*				delta_v = (1-2*(vol-t_vol))*Lambda_w; // Perco um líquido*/
@@ -1503,6 +1516,9 @@ void dynamics(int *s,int num_steps, double Aw)
 		}//dim do ELSE
 
 	} //fim do FOR
+	px_CM = x_CM;
+	py_CM = y_CM;
+	pz_CM = z_CM;
 
   return;
 }
