@@ -17,7 +17,7 @@ for h in 8
 for w in 5
 	do
 
-for fo in 0.1 1 10
+for fo in 0.01 0.1 1 10 100
 	do
 
 for CI in 2

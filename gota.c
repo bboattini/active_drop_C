@@ -1259,11 +1259,16 @@ void dynamics(int *s,int num_steps, double Aw)
 				{
 					neigh_index = (int) (FRANDOM*27);
 					if (neigh_index != 13){
-						neigh_site = neighbor_value(site, neigh_index);
-						s_neigh = s[neigh_site];
+						if (nv_w[site] > 0){
+							neigh_site = neighbor_value(site, neigh_index);
+							s_neigh = s[neigh_site];
+						} 
+						else{
+							neigh_site = site; // If there are no water neighbors, the site does not move
+							s_neigh = s[neigh_site];
+						}
 					}
 				}
-				printf("s_site = %d\t s_neigh = %d\n", s_site, s_neigh);
 				xi = neigh_site % l;
 				xf = site % l;
 				dx = xf - xi;
@@ -1290,11 +1295,16 @@ void dynamics(int *s,int num_steps, double Aw)
 				{
 					neigh_index = (int) (FRANDOM*27);
 					if (neigh_index != 13){
-						neigh_site = neighbor_value(site, neigh_index);
-						s_neigh = s[neigh_site];
+						if (nv_w[site] > 0){
+							neigh_site = neighbor_value(site, neigh_index);
+							s_neigh = s[neigh_site];
+						} 
+						else{
+							neigh_site = site; // If there are no water neighbors, the site does not move
+							s_neigh = s[neigh_site];
+						}
 					}
 				}
-				printf("s_site = %d\t s_neigh = %d\n", s_site, s_neigh);
 
 				xf = neigh_site % l;
 				xi = site % l;
@@ -2716,7 +2726,12 @@ int neighbor_value(int site, int index)
 	yn = ((index/ln)%ln - 1 + y + l)%l;
 	zn = (index/ln2 - 1 + z + l)%l;
 
+	//printf("site = %d \t s_site = %d num_viz_w = %d\n", site, s[site], nv_w[site]);
+	//printf("xn = %d, yn = %d, zn = %d\n", xn, yn, zn);
+	//printf("x = %d, y = %d, z = %d\n", x, y, z);
+
 	neigh = xn + yn*l + zn*l2;
+	//printf("site = %d\n", neigh);
 
 	return neigh;
 }
