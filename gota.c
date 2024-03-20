@@ -42,7 +42,7 @@ void teste_flip_surface(int site,int s_teste,double delta_s, double delta);
 *********************************************************************************************/
 
 #define mc_steps   	       1000  // Número de passos de MC totais
-#define n_mesure       	   10   // Intervalo para salvar medidas
+#define n_mesure       	   1   // Intervalo para salvar medidas
 #define n_teste       	   99990   // Intervalo para salvar medidas
 
 #define temp           	   13.0  // Temperatura
@@ -102,6 +102,7 @@ double v0, v0_w, v0_o; // volumes desejados
 int t_vol, t_vol_w, t_vol_o; // volumes desejados
 double f_w, f_o;                // Frações de água e óleo
 double fw, fo;                // Frações de água e óleo
+double px_CM= -1, py_CM= -1, pz_CM= -1; // Memoria do Centro de massa da gota
 
 double T;
 
@@ -1163,12 +1164,123 @@ void xyz(int *s, int l, int m)
 *********************************************************************************************/
 void dynamics(int *s,int num_steps, double Aw)
 {
-	int     j, hs, xi, xf, dx;
+	int     i,j,k, hs, xi, xf, dx, yi, yf, dy;
 /*	int 	z; */
 	int     site, neigh_site , neigh_index,s_site, s_teste, label,soma, s_neigh; 
 	int     nw,ns,no,ng;
+	double	x_CM, y_CM, z_CM, P, Px, Py;
 	double  temp_e, delta_s, delta_v, delta_g, delta_o, delta_m, delta;
 	long int count=0, count_w=0;
+	int x_just_air = 0, y_just_air = 0, x_pos, y_pos, flag = 0;
+
+	x_CM = 0.0;
+	y_CM = 0.0;
+	z_CM = 0.0;
+	// Iterate over yz planes to find the first x plane without water
+	for(i=0; i<l; i++) 
+	{
+		for(j=0;j<l;j++) 
+		{
+			for(k=h_base; k<l; k++) 
+			{
+				site = i +j*l + k*l2;
+				if( (s[site]==1) ) 
+				{
+					x_just_air = i-1;
+					flag = 1;
+					break; // Exit the inner loop
+				}
+			}
+			if(flag == 1) break; // Exit the outer loop
+		}
+		if(flag == 1) break; // Exit the outermost loop
+	}
+	flag = 0;
+	// Iterate over xz planes to find the first y plane without water
+	for(j=0; j<l; j++) 
+	{
+		for(i=0;i<l;i++) 
+		{
+			for(k=h_base; k<l; k++) 
+			{
+				site = i +j*l + k*l2;
+				if( (s[site]==1) ) 
+				{
+					y_just_air = j-1;
+					flag = 1;
+					break; // Exit the inner loop
+				}
+			}
+			if(flag == 1) break; // Exit the outer loop
+		}
+		if(flag == 1) break; // Exit the outermost loop
+	}
+
+	for(i=0;i<=l;i++) 
+	{
+		for(j=0;j<=l;j++) 
+		{
+			for(k=h_base;k<l;k++) 
+			{
+				site = i +j*l + k*l2;
+				if( (s[site]==1) ) 
+				{
+					count_w++;
+
+					if(i < x_just_air){
+						x_pos = i + l;
+					} else
+					{
+						x_pos = i;
+					}
+					if(j < y_just_air){
+						y_pos = j + l;
+					} else
+					{
+						y_pos = j;
+					}
+					x_CM = x_CM + x_pos;
+					y_CM = y_CM + y_pos;
+					z_CM = z_CM + k;
+            	}
+			}
+		}
+	}
+	// Calculate center of mass and shift back to original range
+	x_CM = fmod((float) x_CM/(float) count_w,l);
+	y_CM = fmod((float) y_CM/(float) count_w,l);
+	z_CM = fmod((float) z_CM/(float) count_w,l);
+
+    double lhalf=(double)l/2;
+
+	if (px_CM == -1 && py_CM == -1 && pz_CM == -1)
+	{
+		px_CM = x_CM;
+		py_CM = y_CM;
+		pz_CM = z_CM;
+	}
+
+	// Calculate the polarity vector x component
+	Px = fmod(x_CM - px_CM,l);
+	//if (Px > l/2) {
+	if (Px > lhalf) {	
+		Px -= l;
+	}
+	//else if (Px < -l/2) {
+	else if (Px < -lhalf) {	
+		Px += l;
+	}
+
+	// Calculate the polarity vector y component
+	Py = fmod(y_CM - py_CM, l);
+	if (Py > lhalf) {
+		Py -= l;
+	}
+	else if (Py < -lhalf) {
+		Py += l;
+	}
+
+	P = sqrt(Px*Px + Py*Py);
 
 	for(j = 0; j < t_vol ; ++j)
     {
@@ -1270,17 +1382,31 @@ void dynamics(int *s,int num_steps, double Aw)
 					}
 				}
 				xi = neigh_site % l;
+				yi = (neigh_site/l)%l;
 				xf = site % l;
+				yf = (site/l)%l;
 				dx = xf - xi;
-				// Adjust dx for periodic boundary conditions
+				dy = yf - yi;
+				// Adjust dx and dy for periodic boundary conditions
 				if (dx > l/2) {
 					dx -= l;
 				} else if (dx < -l/2) {
 					dx += l;
 				}
+				if (dy > l/2) {
+					dy -= l;
+				} else if (dy < -l/2) {
+					dy += l;
+				}
 				
 				// Set delta_m based on the sign of dx
-				delta_m = -Aw * dx;
+				delta_m = -Aw * (Px*dx + Py*dy); // Displacement dot versor twords polarity, is this rigth?
+				/*if (P!=0) {
+					delta_m = delta_m/P;
+				}
+				if (dx!=0 && dy!=0) {
+					delta_m = delta_m/sqrt(dx*dx + dy*dy);
+				}*/
 				delta_g = Gw*hs;
 				delta_s = (ng-nw)*eps_WG + ns*(eps_SW-eps_SG) + (eps_WO-eps_OG)*no;
 /*				delta_v = (1+2*(vol-t_vol))*Lambda_w; // Ganho um  líquido*/
@@ -1307,17 +1433,31 @@ void dynamics(int *s,int num_steps, double Aw)
 				}
 
 				xf = neigh_site % l;
+				yf = (neigh_site/l)%l;
 				xi = site % l;
+				yi = (site/l)%l;
 				dx = xf - xi;
-				// Adjust dx for periodic boundary conditions
+				dy = yf - yi;
+				// Adjust dx and dy for periodic boundary conditions
 				if (dx > l/2) {
 					dx -= l;
 				} else if (dx < -l/2) {
 					dx += l;
 				}
+				if (dy > l/2) {
+					dy -= l;
+				} else if (dy < -l/2) {
+					dy += l;
+				}
 				
 				// Set delta_m based on the sign of dx
-				delta_m = -Aw * dx;
+				delta_m = -Aw * (Px*dx + Py*dy); // Displacement dot versor twords polarity, is this rigth?
+				/*if (P!=0) {
+					delta_m = delta_m/P;
+				}
+				if (dx!=0 && dy!=0) {
+					delta_m = delta_m/sqrt(dx*dx + dy*dy);
+				}*/
 				delta_g = -Gw*hs; 
 				delta_s = (nw-ng)*eps_WG + ns*(eps_SG-eps_SW) + (eps_OG-eps_WO)*no;
 /*				delta_v = (1-2*(vol-t_vol))*Lambda_w; // Perco um líquido*/
@@ -1431,7 +1571,9 @@ void dynamics(int *s,int num_steps, double Aw)
 		}//dim do ELSE
 
 	} //fim do FOR
-
+  px_CM = x_CM;
+  py_CM = y_CM;
+  pz_CM = z_CM;
   return;
 }
 /*********************************************************************************************
