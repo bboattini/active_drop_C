@@ -41,9 +41,9 @@ void teste_flip_surface(int site,int s_teste,double delta_s, double delta);
 *                       Declarando parâmetros da simulação - técnicos                        *
 *********************************************************************************************/
 
-#define mc_steps   	       1000  // Número de passos de MC totais
+#define mc_steps   	       100000  // Número de passos de MC totais
 #define n_mesure       	   1   // Intervalo para salvar medidas
-#define n_teste       	   99990   // Intervalo para salvar medidas
+#define n_teste       	   999990   // Intervalo para salvar medidas
 
 #define temp           	   13.0  // Temperatura
 #define kB             	   1.0  // Constante de Boltzman
@@ -1401,12 +1401,12 @@ void dynamics(int *s,int num_steps, double Aw)
 				
 				// Set delta_m based on the sign of dx
 				delta_m = -Aw * (Px*dx + Py*dy); // Displacement dot versor twords polarity, is this rigth?
-				/*if (P!=0) {
+				if (P!=0) {
 					delta_m = delta_m/P;
 				}
 				if (dx!=0 && dy!=0) {
 					delta_m = delta_m/sqrt(dx*dx + dy*dy);
-				}*/
+				}
 				delta_g = Gw*hs;
 				delta_s = (ng-nw)*eps_WG + ns*(eps_SW-eps_SG) + (eps_WO-eps_OG)*no;
 /*				delta_v = (1+2*(vol-t_vol))*Lambda_w; // Ganho um  líquido*/
@@ -1452,12 +1452,12 @@ void dynamics(int *s,int num_steps, double Aw)
 				
 				// Set delta_m based on the sign of dx
 				delta_m = -Aw * (Px*dx + Py*dy); // Displacement dot versor twords polarity, is this rigth?
-				/*if (P!=0) {
+				if (P!=0) {
 					delta_m = delta_m/P;
 				}
 				if (dx!=0 && dy!=0) {
 					delta_m = delta_m/sqrt(dx*dx + dy*dy);
-				}*/
+				}
 				delta_g = -Gw*hs; 
 				delta_s = (nw-ng)*eps_WG + ns*(eps_SG-eps_SW) + (eps_OG-eps_WO)*no;
 /*				delta_v = (1-2*(vol-t_vol))*Lambda_w; // Perco um líquido*/
@@ -2780,20 +2780,21 @@ void save_conf(int num_steps,int iout)
 
 	else if(iout==0) 
 	{	
-
-		fprintf(fconf,"# tempo  %d\n",num_steps);
-		for(i=0;i<int_label;i++) 
-		{
-			if(s[w_inter[i]]==1 || s[w_inter[i]]==2 ) 
+		if (num_steps%100==0){
+			fprintf(fconf,"# tempo  %d\n",num_steps);
+			for(i=0;i<int_label;i++) 
 			{
-      			fprintf(fconf,"%d  %d\n",w_inter[i], s[w_inter[i]] );
+				if(s[w_inter[i]]==1 || s[w_inter[i]]==2 ) 
+				{
+					fprintf(fconf,"%d  %d\n",w_inter[i], s[w_inter[i]] );
 
-  			} //fim o IF
+				} //fim o IF
 
-		} //fim do FOR
+			} //fim do FOR
 
-  		fflush(fconf);
-  		fprintf(fconf,"\n\n"); 
+			fflush(fconf);
+			fprintf(fconf,"\n\n"); 
+		} //fim do IF
 
 	} //fim do ELSE IF
 
