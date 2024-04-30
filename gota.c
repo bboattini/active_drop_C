@@ -41,9 +41,9 @@ void teste_flip_surface(int site,int s_teste,double delta_s, double delta);
 *                       Declarando parâmetros da simulação - técnicos                        *
 *********************************************************************************************/
 
-#define mc_steps   	       1000  // Número de passos de MC totais
-#define n_mesure       	   1   // Intervalo para salvar medidas
-#define n_teste       	   99990   // Intervalo para salvar medidas
+#define mc_steps   	       10000  // Número de passos de MC totais
+#define n_mesure       	   100   // Intervalo para salvar medidas
+#define n_teste       	   999990   // Intervalo para salvar medidas
 
 #define temp           	   13.0  // Temperatura
 #define kB             	   1.0  // Constante de Boltzman
@@ -1164,11 +1164,11 @@ void xyz(int *s, int l, int m)
 *********************************************************************************************/
 void dynamics(int *s,int num_steps, double Aw)
 {
-	int     i,j,k, hs, xi, xf, dx, yi, yf, dy;
+	int     i,j,k, hs, xi, xf, dx, yi, yf, dy, zi , zf, dz;
 /*	int 	z; */
 	int     site, neigh_site , neigh_index,s_site, s_teste, label,soma, s_neigh; 
 	int     nw,ns,no,ng;
-	double	x_CM, y_CM, z_CM, P, Px, Py;
+	double	x_CM, y_CM, z_CM, P, Px, Py, Pz;
 	double  temp_e, delta_s, delta_v, delta_g, delta_o, delta_m, delta;
 	long int count=0, count_w=0;
 	int x_just_air = 0, y_just_air = 0, x_pos, y_pos, flag = 0;
@@ -1179,6 +1179,7 @@ void dynamics(int *s,int num_steps, double Aw)
 	// Iterate over yz planes to find the first x plane without water
 	for(i=0; i<l; i++) 
 	{
+		x_just_air = i;
 		for(j=0;j<l;j++) 
 		{
 			for(k=h_base; k<l; k++) 
@@ -1186,19 +1187,19 @@ void dynamics(int *s,int num_steps, double Aw)
 				site = i +j*l + k*l2;
 				if( (s[site]==1) ) 
 				{
-					x_just_air = i-1;
-					flag = 1;
+					x_just_air = -1;
 					break; // Exit the inner loop
 				}
 			}
-			if(flag == 1) break; // Exit the outer loop
+			if(x_just_air == -1) break; // Exit the outer loop
 		}
-		if(flag == 1) break; // Exit the outermost loop
+		if(x_just_air > -1) break; // Exit the outermost loop
 	}
 	flag = 0;
 	// Iterate over xz planes to find the first y plane without water
 	for(j=0; j<l; j++) 
 	{
+		y_just_air = j;
 		for(i=0;i<l;i++) 
 		{
 			for(k=h_base; k<l; k++) 
@@ -1206,14 +1207,13 @@ void dynamics(int *s,int num_steps, double Aw)
 				site = i +j*l + k*l2;
 				if( (s[site]==1) ) 
 				{
-					y_just_air = j-1;
-					flag = 1;
+					y_just_air = -1;
 					break; // Exit the inner loop
 				}
 			}
-			if(flag == 1) break; // Exit the outer loop
+			if(y_just_air == -1) break; // Exit the outer loop
 		}
-		if(flag == 1) break; // Exit the outermost loop
+		if(y_just_air > -1) break; // Exit the outermost loop
 	}
 
 	for(i=0;i<=l;i++) 
@@ -1251,8 +1251,6 @@ void dynamics(int *s,int num_steps, double Aw)
 	y_CM = fmod((float) y_CM/(float) count_w,l);
 	z_CM = fmod((float) z_CM/(float) count_w,l);
 
-    double lhalf=(double)l/2;
-
 	if (px_CM == -1 && py_CM == -1 && pz_CM == -1)
 	{
 		px_CM = x_CM;
@@ -1261,26 +1259,34 @@ void dynamics(int *s,int num_steps, double Aw)
 	}
 
 	// Calculate the polarity vector x component
-	Px = fmod(x_CM - px_CM,l);
-	//if (Px > l/2) {
-	if (Px > lhalf) {	
+	Px = x_CM - px_CM;
+	if (Px > l/2) {	
 		Px -= l;
 	}
-	//else if (Px < -l/2) {
-	else if (Px < -lhalf) {	
+	else if (Px < -l/2) {
 		Px += l;
 	}
 
 	// Calculate the polarity vector y component
-	Py = fmod(y_CM - py_CM, l);
-	if (Py > lhalf) {
+	Py = y_CM - py_CM;
+	if (Py > l/2) {
 		Py -= l;
 	}
-	else if (Py < -lhalf) {
+	else if (Py < -l/2) {
 		Py += l;
 	}
 
-	P = sqrt(Px*Px + Py*Py);
+	// Calculate the polarity vector z component
+	Pz = z_CM - pz_CM;
+	if (Pz > l/2) {
+		Pz -= l;
+	}
+	else if (Pz < -l/2) {
+		Pz += l;
+	}
+	Pz=0;
+
+	P = sqrt(Px*Px + Py*Py + Pz*Pz);
 
 	for(j = 0; j < t_vol ; ++j)
     {
@@ -1383,30 +1389,44 @@ void dynamics(int *s,int num_steps, double Aw)
 				}
 				xi = neigh_site % l;
 				yi = (neigh_site/l)%l;
+				zi = neigh_site/l2;
+
 				xf = site % l;
 				yf = (site/l)%l;
+				zf = site/l2;
+
 				dx = xf - xi;
 				dy = yf - yi;
-				// Adjust dx and dy for periodic boundary conditions
+				dz = zf - zi;
+				
+				// Adjust dx, dy and dz for periodic boundary conditions
 				if (dx > l/2) {
 					dx -= l;
 				} else if (dx < -l/2) {
 					dx += l;
 				}
+
 				if (dy > l/2) {
 					dy -= l;
 				} else if (dy < -l/2) {
 					dy += l;
 				}
-				
+
+				if (dz > l/2) {
+					dz -= l;
+				} else if (dz < -l/2) {
+					dz += l;
+				}
+				dz = 0;
+
 				// Set delta_m based on the sign of dx
-				delta_m = -Aw * (Px*dx + Py*dy); // Displacement dot versor twords polarity, is this rigth?
-				/*if (P!=0) {
+				delta_m = -Aw * (Px*dx + Py*dy + Pz*dz); // Displacement dot versor twords polarity, is this rigth?
+				if (P!=0) {
 					delta_m = delta_m/P;
 				}
-				if (dx!=0 && dy!=0) {
-					delta_m = delta_m/sqrt(dx*dx + dy*dy);
-				}*/
+				if (sqrt(dx*dx + dy*dy + dz*dz)!=0) {
+					delta_m = delta_m/sqrt(dx*dx + dy*dy + dz*dz);
+				}
 				delta_g = Gw*hs;
 				delta_s = (ng-nw)*eps_WG + ns*(eps_SW-eps_SG) + (eps_WO-eps_OG)*no;
 /*				delta_v = (1+2*(vol-t_vol))*Lambda_w; // Ganho um  líquido*/
@@ -1434,11 +1454,17 @@ void dynamics(int *s,int num_steps, double Aw)
 
 				xf = neigh_site % l;
 				yf = (neigh_site/l)%l;
+				zf = neigh_site/l2;
+
 				xi = site % l;
 				yi = (site/l)%l;
+				zi = site/l2;
+
 				dx = xf - xi;
 				dy = yf - yi;
-				// Adjust dx and dy for periodic boundary conditions
+				dz = zf - zi;
+
+				// Adjust dx, dy and dz for periodic boundary conditions
 				if (dx > l/2) {
 					dx -= l;
 				} else if (dx < -l/2) {
@@ -1449,15 +1475,21 @@ void dynamics(int *s,int num_steps, double Aw)
 				} else if (dy < -l/2) {
 					dy += l;
 				}
+				if (dz > l/2) {
+					dz -= l;
+				} else if (dz < -l/2) {
+					dz += l;
+				}
+				dz = 0;
 				
 				// Set delta_m based on the sign of dx
-				delta_m = -Aw * (Px*dx + Py*dy); // Displacement dot versor twords polarity, is this rigth?
-				/*if (P!=0) {
+				delta_m = -Aw * (Px*dx + Py*dy + Pz*dz); // Displacement dot versor twords polarity, is this rigth?
+				if (P!=0) {
 					delta_m = delta_m/P;
 				}
-				if (dx!=0 && dy!=0) {
-					delta_m = delta_m/sqrt(dx*dx + dy*dy);
-				}*/
+				if (sqrt(dx*dx + dy*dy + dz*dz)!=0) {
+					delta_m = delta_m/sqrt(dx*dx + dy*dy + dz*dz);
+				}
 				delta_g = -Gw*hs; 
 				delta_s = (nw-ng)*eps_WG + ns*(eps_SG-eps_SW) + (eps_OG-eps_WO)*no;
 /*				delta_v = (1-2*(vol-t_vol))*Lambda_w; // Perco um líquido*/
@@ -2056,6 +2088,49 @@ void measure_angle(int num_steps)
 	int x_just_air , y_just_air , x_pos, y_pos;
 
 // -------------------------------------------------------------------------------------------
+// Encontrando o primeiro plano de ar em x e y
+
+	// Iterate over yz planes to find the first x plane without water
+	for(i=0; i<l; i++) 
+	{
+		x_just_air = i;
+		for(j=0;j<l;j++) 
+		{
+			for(k=h_base; k<l; k++) 
+			{
+				site = i +j*l + k*l2;
+				if( (s[site]==1) ) 
+				{
+					x_just_air = -1;
+					break; // Exit the inner loop
+				}
+			}
+			if(x_just_air == -1) break; // Exit the outer loop
+		}
+		if(x_just_air > -1) break; // Exit the outermost loop
+	}
+
+	// Iterate over xz planes to find the first y plane without water
+	for(j=0; j<l; j++) 
+	{
+		y_just_air = j;
+		for(i=0;i<l;i++) 
+		{
+			for(k=h_base; k<l; k++) 
+			{
+				site = i +j*l + k*l2;
+				if( (s[site]==1) ) 
+				{
+					y_just_air = -1;
+					break; // Exit the inner loop
+				}
+			}
+			if(y_just_air == -1) break; // Exit the outer loop
+		}
+		if(y_just_air > -1) break; // Exit the outermost loop
+	}
+
+// -------------------------------------------------------------------------------------------
 // Determinando a altura do filme para água e óleo
 
 	h_film = 0;
@@ -2216,28 +2291,41 @@ void measure_angle(int num_steps)
 	for(i=0;i<l;++i)
 		for(j=0;j<l;++j)
 	{
+		
+		if(i < x_just_air){
+			x_pos = i + l;
+		} else
+		{
+			x_pos = i;
+		}
+		if(j < y_just_air){
+			y_pos = j + l;
+		} else
+		{
+			y_pos = j;
+		}
 
-		site = (h+h_base)*l2+j*l+i;
+		site = (h+h_base)*l2+y_pos*l+x_pos;
 		nw=nv_w[site];
 		no=nv_o[site];
 
 		if ((s[site]==1) && (nw>=2))
 		{
 			++count_w;
-			if (i<xmin) xmin=i;
-			if (i>xmax) xmax=i;
-			if (j<ymin) ymin=j;
-			if (j>ymax) ymax=j;
+			if (x_pos<xmin) xmin=x_pos;
+			if (x_pos>xmax) xmax=x_pos;
+			if (y_pos<ymin) ymin=y_pos;
+			if (y_pos>ymax) ymax=y_pos;
 
 		} //fim do IF
 
 		if (s[site]==2 && (no>=2))
 		{
 			++count_o;
-			if (i<xmin_o) xmin_o=i;
-			if (i>xmax_o) xmax_o=i;
-			if (j<ymin_o) ymin_o=j;
-			if (j>ymax_o) ymax_o=j;
+			if (x_pos<xmin_o) xmin_o=x_pos;
+			if (x_pos>xmax_o) xmax_o=x_pos;
+			if (y_pos<ymin_o) ymin_o=y_pos;
+			if (y_pos>ymax_o) ymax_o=y_pos;
 		} //fim do IF
 
 	} //fim dos FOR
@@ -2471,45 +2559,6 @@ void measure_angle(int num_steps)
 	y_CM = 0.0;
 	z_CM = 0.0;
 	count_w = 0;
-	// Iterate over yz planes to find the first x plane without water
-	for(i=0; i<l; i++) 
-	{
-		x_just_air = i;
-		for(j=0;j<l;j++) 
-		{
-			for(k=h_base; k<l; k++) 
-			{
-				site = i +j*l + k*l2;
-				if( (s[site]==1) ) 
-				{
-					x_just_air = -1;
-					break; // Exit the inner loop
-				}
-			}
-			if(x_just_air == -1) break; // Exit the outer loop
-		}
-		if(x_just_air > -1) break; // Exit the outermost loop
-	}
-
-	// Iterate over xz planes to find the first y plane without water
-	for(j=0; j<l; j++) 
-	{
-		y_just_air = j;
-		for(i=0;i<l;i++) 
-		{
-			for(k=h_base; k<l; k++) 
-			{
-				site = i +j*l + k*l2;
-				if( (s[site]==1) ) 
-				{
-					y_just_air = -1;
-					break; // Exit the inner loop
-				}
-			}
-			if(y_just_air == -1) break; // Exit the outer loop
-		}
-		if(y_just_air > -1) break; // Exit the outermost loop
-	}
 
 	for(i=0;i<=l;i++) 
 	{
@@ -2780,20 +2829,21 @@ void save_conf(int num_steps,int iout)
 
 	else if(iout==0) 
 	{	
-
-		fprintf(fconf,"# tempo  %d\n",num_steps);
-		for(i=0;i<int_label;i++) 
-		{
-			if(s[w_inter[i]]==1 || s[w_inter[i]]==2 ) 
+		if (num_steps%100==0){
+			fprintf(fconf,"# tempo  %d\n",num_steps);
+			for(i=0;i<int_label;i++) 
 			{
-      			fprintf(fconf,"%d  %d\n",w_inter[i], s[w_inter[i]] );
+				if(s[w_inter[i]]==1 || s[w_inter[i]]==2 ) 
+				{
+					fprintf(fconf,"%d  %d\n",w_inter[i], s[w_inter[i]] );
 
-  			} //fim o IF
+				} //fim o IF
 
-		} //fim do FOR
+			} //fim do FOR
 
-  		fflush(fconf);
-  		fprintf(fconf,"\n\n"); 
+			fflush(fconf);
+			fprintf(fconf,"\n\n"); 
+		} //fim do IF
 
 	} //fim do ELSE IF
 
