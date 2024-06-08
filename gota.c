@@ -41,9 +41,9 @@ void teste_flip_surface(int site,int s_teste,double delta_s, double delta);
 *                       Declarando parâmetros da simulação - técnicos                        *
 *********************************************************************************************/
 
-#define mc_steps   	       10000  // Número de passos de MC totais
-#define n_mesure       	   100   // Intervalo para salvar medidas
-#define n_teste       	   999990   // Intervalo para salvar medidas
+#define mc_steps   	   1000000  // Número de passos de MC totais
+#define n_mesure       	   1   // Intervalo para salvar medidas
+#define n_teste       	   999999990   // Intervalo para salvar medidas
 
 #define temp           	   13.0  // Temperatura
 #define kB             	   1.0  // Constante de Boltzman
@@ -500,8 +500,9 @@ void openfiles(void)
 		fprintf(fp1,"# \n");
 		fprintf(fp1,"# Total time = %d\n",mc_steps);
 		fprintf(fp1,"# =====================================================================\n");
-		fprintf(fp1,"#  t        V      Vw    Vo       E           theta_x  theta_y     R_x        R_y    B px  py   B_x         B_y     H   vb\n");
-   		fflush(fp1);
+		//fprintf(fp1,"#  t        V      Vw    Vo       E           theta_x  theta_y     R_x        R_y    B px  py   B_x         B_y     H   vb\n");
+   		fprintf(fp1,"#  t        V      Vw       E           theta_x  theta_y     R_x        R_y    B px  py   B_x         B_y     H   vb\n");
+		fflush(fp1);
     
 		fflush(stdout);
 
@@ -2596,7 +2597,9 @@ void measure_angle(int num_steps)
 	z_CM = fmod((float) z_CM/(float) count_w,l);
 // -------------------------------------------------------------------------------------------
   
-	fprintf(fp1,"%8d %d %d %d %f %f %f %f %f %f %f %f %f %f %f %f %f %d %d %d %d %f %f %f %f %f %f %f %f %f %f %f %f %f\n", num_steps, (int)vol, (int)vol_w, (int)vol_o, calculate_energy(), base_radius_x, base_radius_y, base_radius_x_o, base_radius_y_o, rx, ry, rx_o, ry_o, angle_x, angle_y, angle_x_o, angle_y_o, num_pil_x,num_pil_y, num_pil_x_o,num_pil_y_o, volume_below, volume_below_o, volume_res,volume_res_o, per_w, per_o, frac_w, frac_o, vol_p_w, vol_p_o, x_CM, y_CM, z_CM);
+	//fprintf(fp1,"%8d %d %d %d %f %f %f %f %f %f %f %f %f %f %f %f %f %d %d %d %d %f %f %f %f %f %f %f %f %f %f %f %f %f\n", num_steps, (int)vol, (int)vol_w, (int)vol_o, calculate_energy(), base_radius_x, base_radius_y, base_radius_x_o, base_radius_y_o, rx, ry, rx_o, ry_o, angle_x, angle_y, angle_x_o, angle_y_o, num_pil_x,num_pil_y, num_pil_x_o,num_pil_y_o, volume_below, volume_below_o, volume_res,volume_res_o, per_w, per_o, frac_w, frac_o, vol_p_w, vol_p_o, x_CM, y_CM, z_CM);
+	// The same line as above, but without (int)vol_o, base_radius_x_o, base_radius_y_o, rx_o, ry_o, angle_x_o, angle_y_o, num_pil_x_o, num_pil_y_o, volume_below_o, volume_res_o, per_o, frac_o, vol_p_o
+	fprintf(fp1,"%8d %d %d %f %f %f %f %f %f %f %f %f %f %f %f %f\n", num_steps, (int)vol, (int)vol_w, calculate_energy(), base_radius_x, base_radius_y, rx, ry, angle_x, angle_y, volume_below, per_w, frac_w, x_CM, y_CM, z_CM);
 	fflush(fp1);
 
   return;
@@ -2826,7 +2829,7 @@ void save_conf(int num_steps,int iout)
     
   		fclose(flast);
 	} //fim do if
-
+/*
 	else if(iout==0) 
 	{	
 		if (num_steps%100==0){
@@ -2846,7 +2849,7 @@ void save_conf(int num_steps,int iout)
 		} //fim do IF
 
 	} //fim do ELSE IF
-
+*/
 	return;
 }
 
