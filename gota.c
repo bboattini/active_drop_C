@@ -41,8 +41,8 @@ void teste_flip_surface(int site,int s_teste,double delta_s, double delta);
 *                       Declarando parâmetros da simulação - técnicos                        *
 *********************************************************************************************/
 
-#define mc_steps   	   1000000  // Número de passos de MC totais
-#define n_mesure       	   1   // Intervalo para salvar medidas
+#define mc_steps   	   10000000  // Número de passos de MC totais
+#define n_mesure       	   100   // Intervalo para salvar medidas
 #define n_teste       	   999999990   // Intervalo para salvar medidas
 
 #define temp           	   13.0  // Temperatura
@@ -2829,7 +2829,7 @@ void save_conf(int num_steps,int iout)
     
   		fclose(flast);
 	} //fim do if
-/*
+
 	else if(iout==0) 
 	{	
 		if (num_steps%100==0){
@@ -2849,7 +2849,7 @@ void save_conf(int num_steps,int iout)
 		} //fim do IF
 
 	} //fim do ELSE IF
-*/
+
 	return;
 }
 
