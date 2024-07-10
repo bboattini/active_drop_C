@@ -1257,8 +1257,15 @@ void dynamics(int *s,int num_steps, double Aw)
 		px_CM = x_CM;
 		py_CM = y_CM;
 		pz_CM = z_CM;
+		Px = x_CM - px_CM;
+		Py = y_CM - py_CM;
+		Pz = z_CM - pz_CM;
+		P = sqrt(Px*Px + Py*Py + Pz*Pz);
 	}
 
+	if (num_steps%1 == 0)
+	{
+		
 	// Calculate the polarity vector x component
 	Px = x_CM - px_CM;
 	if (Px > l/2) {	
@@ -1288,6 +1295,7 @@ void dynamics(int *s,int num_steps, double Aw)
 	Pz=0;
 
 	P = sqrt(Px*Px + Py*Py + Pz*Pz);
+	}
 
 	for(j = 0; j < t_vol ; ++j)
     {
@@ -2829,7 +2837,7 @@ void save_conf(int num_steps,int iout)
     
   		fclose(flast);
 	} //fim do if
-
+	/*
 	else if(iout==0) 
 	{	
 		if (num_steps%100==0){
@@ -2848,7 +2856,7 @@ void save_conf(int num_steps,int iout)
 			fprintf(fconf,"\n\n"); 
 		} //fim do IF
 
-	} //fim do ELSE IF
+	} //fim do ELSE IF */
 
 	return;
 }
