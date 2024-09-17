@@ -10,13 +10,13 @@ PARAM = {
     'a': 0,
     'h': 0,
     'samp_frac': 10,
-    'bin': 100
+    'bin': 1000
 }
 
 def histogram_of(var=None, a=None, h=None):
     print("-----------------------------------Start----------------------------------\n")
     files_to_read = af.file_crawler()['measures']
-    fo_values = np.sort(np.unique(np.array([af.fo_from_file(f) for f in files_to_read])))
+    fo_values = np.sort(np.unique(np.array([float(af.fo_from_file(f)) for f in files_to_read])))
     a_values = np.sort(np.unique(np.array([af.a_from_file(f) for f in files_to_read])))
     h_values = np.sort(np.unique(np.array([af.h_from_file(f) for f in files_to_read])))
     #--------------------------------------------------------------------------------------
@@ -79,7 +79,7 @@ def histogram_of(var=None, a=None, h=None):
         elif PARAM['var'] == 'Vp':
             xTS = vbw
             yTS = []
-            x_limits = (0, 1)
+            x_limits = (0, 0.2)
             labeling_x = r"$V_f$"
         else:
             print("Invalid 'var' parameter")
@@ -94,7 +94,7 @@ def histogram_of(var=None, a=None, h=None):
         
         # Find the list index of fo in fo_values
         fo = af.fo_from_file(f)
-        fo_loc = np.where(fo_values == fo)[0][0]
+        fo_loc = np.where(fo_values == float(fo))[0][0]
         print(f"Plotting histogram a = {PARAM['a']}, f = {fo} and {state}")
 
         #================================HISTOGRAMS================================

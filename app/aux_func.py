@@ -5,8 +5,8 @@ import numpy as np
 PATH = str(os.path.abspath(__file__))
 PATH = PATH.replace('/'+ PATH.split("/")[-2] +'/' + PATH.split("/")[-1], "")
 items = os.listdir(PATH)
-COLORS = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'w', '#FF5733', '#DAF7A6']
-MARKERS = ['o','D', 'd', 's', 'p', '*', 'h', 'H', '+', 'x']
+COLORS = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'w', 'black', '#33FFF5', '#FF8C33', '#8C33FF', '#33FF8C', '#FF3333', '#33A1FF']
+MARKERS = ['o','d', 's', 'p', '*', 'h', '+', 'x']
 
 def a_from_file (File):
   fs = File.split("/")[-1].split("_")
