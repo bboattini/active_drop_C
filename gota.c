@@ -1,7 +1,7 @@
 /*********************************************************************************************
 *																							 *
-*        Programa Potts Heitor modificado para incluir a mistura água/óleo                   *
-*			        Modificado por Cristina Gavazoni, Junho 2020							 *
+*        			Programa Gota ativa feito por Bernarno Boattini          		         *
+*			  Adaptado do programa de Potts 4 spins de Cristina Gavazzoni					 *
 *																							 *
 *********************************************************************************************/
 /* Não está implementado a continuação de runs antigos!!!*/
@@ -33,25 +33,22 @@ void measure_angle(int num_steps);
 int neighbor_value(int site, int index);
 double calculate_energy(void);
 void save_conf(int num_steps, int iout);
-void teste_flip_droplet(int site,int s_teste,double delta_s, double delta);
-void teste_flip_surface(int site,int s_teste,double delta_s, double delta);
-
 
 /*********************************************************************************************
 *                       Declarando parâmetros da simulação - técnicos                        *
 *********************************************************************************************/
 
-#define mc_steps   	   10000000  // Número de passos de MC totais
-#define n_mesure       	   100   // Intervalo para salvar medidas
-#define n_teste       	   999999990   // Intervalo para salvar medidas
+#define mc_steps			100  // Número de passos de MC totais
+#define n_mesure			10   // Intervalo para salvar medidas
+#define n_teste				9990   // Intervalo para salvar medidas
 
-#define temp           	   13.0  // Temperatura
-#define kB             	   1.0  // Constante de Boltzman
+#define temp				13.0  // Temperatura
+#define kB					1.0  // Constante de Boltzman
 
-#define t_neigh        	   26   // Número de vizinhos
-#define t_close_neigh  	   18   // Número de vizinhos próximos 
+#define t_neigh				26   // Número de vizinhos
+#define t_close_neigh		18   // Número de vizinhos próximos 
 
-#define NUM_CONF            1 // DEIXAR IGUAL A 1 !!
+#define NUM_CONF			1 // DEIXAR IGUAL A 1 !!
 
 /*********************************************************************************************
 *                    Declarando Parâmetros constantes durante a simulação                    *
@@ -70,7 +67,6 @@ void teste_flip_surface(int site,int s_teste,double delta_s, double delta);
 #define eps_WG              2.70 // E superficial L-G agua
 #define cos_theta_w         (cos(111.0*M_PI/180.0))
 #define eps_SW              (eps_SG-eps_WG*cos_theta_w)// E superficial S-L agua
-
 
 #define eps_OG              1.04 // E superficial L-G oleo
 #define cos_theta_O         (cos(53.0*M_PI/180.0))
@@ -93,16 +89,14 @@ double r0;
 int rg, rg2, rg3;   // Tamanho da gota e multiplos
 int h, w,a, d;     	// Altura, largura, separaco pilar e d=w+a
 int initialstate;  	// Estado inicial: W ou CB
-double hm, thmed;  	// h médio dos pilares, ângulo médio
+double	thmed;  	// ângulo médio
 double fvmed_w,fvmed_o; // fração med gota de agua e óleo
 int c_theta, c_fv_w, c_fv_o;// contador angulo, contador das porcentagens de volume
-int hmax, hmin;    	// multiplicador para numero de blocos, h máximo e mínimo da conf
 
 double v0, v0_w, v0_o; // volumes desejados
 int t_vol, t_vol_w, t_vol_o; // volumes desejados
 double f_w, f_o;                // Frações de água e óleo
 double fw, fo;                // Frações de água e óleo
-double px_CM= -1, py_CM= -1, pz_CM= -1; // Memoria do Centro de massa da gota
 
 double T;
 
@@ -123,7 +117,17 @@ int *inter_pos, *w_inter, *inter_mtx; // Sítios na interface
 int n_w, n_o, n_s; //número de sítios água e óleo
 int int_label; //label da lista de sítios na interface
 int vol, vol_w, vol_o; // volumes calculados
-double Gw, Go, Aw;
+double Gw, Go;
+
+//--------------------------------------------------------------------------------------------
+// Variaveis da atividade
+//--------------------------------------------------------------------------------------------
+
+int dt; //intervalo de atualização de P
+double Aw;
+double Px=0, Py=0, Pz=0, P=0;
+double *rx_CM, *ry_CM, *rz_CM; //Posição real do centro de massa
+double x_CM_o=0, y_CM_o=0,z_CM_o=0; // memoria do CM
 
 //--------------------------------------------------------------------------------------------
 // Variaveis dos observáveis
@@ -144,7 +148,7 @@ int num_grooves_o,num_wenzel_o;
 //--------------------------------------------------------------------------------------------
 
 char output_file1[100],input_file[100]; //Nome dos arquivos
-FILE *fconf,*fp1,*finit,*fxyz,*flast,*fp_in,*fout,*foil,*fwat; // Localizadores dos arquivos
+FILE *fconf,*fp1,*finit,*fxyz,*flast,*fp_in,*fout,*fr2,*fbase; // Localizadores dos arquivos
 
 //--------------------------------------------------------------------------------------------
 // Estatística
@@ -208,24 +212,12 @@ int main(int argc,char *argv[])
 
 		rg = (int)r0;
 		f_o = 0.0;
+		dt = 1;
 
 		sprintf(output_file1,"%sgota_3d_L_%d_R_%d_a_%d_h_%d_w_%d_fo_%3.2f.out",CI,l,rg,a,h,w,Aw);	
 		fout = fopen(output_file1,"w");	
 
 		fflush(fout);
-
-/*		sprintf(output_file1,"%sgota_3d_L_%d_R_%d_a_%d_h_%d_w_%d_fo_%3.2f_oil.out",CI,l,rg,a,h,w,Aw);	*/
-/*		foil = fopen(output_file1,"w");	*/
-/*		fprintf(foil ,"#  site   s[site]    s_teste    nw     no    ng    ns      ei     ef     ef-ei   delta_s     delta\n");*/
-
-/*		fflush(foil);*/
-
-/*		sprintf(output_file1,"%sgota_3d_L_%d_R_%d_a_%d_h_%d_w_%d_fo_%3.2f_water.out",CI,l,rg,a,h,w,Aw);	*/
-/*		fwat = fopen(output_file1,"w");	*/
-/*		fprintf(fwat ,"#  site   s[site]    s_teste    nw     no    ng    ns      ei     ef     ef-ei   delta_s     delta\n");*/
-
-/*		fflush(fwat);*/
-
 
 		rg2 = rg*rg;
 		rg3 = rg2*rg;
@@ -267,8 +259,6 @@ int main(int argc,char *argv[])
     	fprintf(fout,"eps_WG : %f\n", eps_WG);
     	fprintf(fout,"eps_SO : %f\n", eps_SO);
     	fprintf(fout,"eps_OG : %f\n", eps_OG);	
-
-
     	fprintf(fout,"CI     : %s\n",CI);
     	fprintf(fout,"Seed   : %ld\n",seed);
 		fprintf(fout,"=====================================================================\n");
@@ -486,11 +476,11 @@ void openfiles(void)
 		fprintf(fp1,"# =====================================================================\n");
 		fprintf(fp1,"# Gota - CB (1) ou Wenzel(2)  3D : %d\n",initialstate);
 		fprintf(fp1,"# \n");
-		fprintf(fp1,"# L = %d   Rg = %d   fo = %3.2f\n" ,l,rg, f_o);
+		fprintf(fp1,"# L = %d   Rg = %d   fo = %3.2f\n" ,l,rg, Aw);
 		fprintf(fp1,"# w = %d      h = %d    a = %d\n",w,h,a);
 		fprintf(fp1,"# \n");
-		fprintf(fp1,"# Gw = %5.4f   Lambda_w = %5.4d\n",Gw, Lambda_w);
-		fprintf(fp1,"# Go = %5.4f   Lambda_o = %5.4d\n",Go, Lambda_o);
+		fprintf(fp1,"# Gw = %5.4f   Lambda_w = %5.4f\n",Gw, Lambda_w);
+		fprintf(fp1,"# Go = %5.4f   Lambda_o = %5.4f\n",Go, Lambda_o);
 		fprintf(fp1,"# \n");
 		fprintf(fp1,"# eps_SG = %3.2f     eps_WO = %3.2f\n",eps_SG, eps_WO);
 		fprintf(fp1,"# eps_SW = %3.2f     eps_WG = %3.2f\n",eps_SW, eps_WG);
@@ -516,11 +506,11 @@ void openfiles(void)
 		fprintf(fconf,"# =====================================================================\n");
 		fprintf(fconf,"# Gota - CB (1) ou Wenzel(2)  3D : %d\n",initialstate);
 		fprintf(fconf,"#\n");
-		fprintf(fconf,"# L = %d   Rg = %d   fo = %3.2f\n" ,l,rg, f_o);
+		fprintf(fconf,"# L = %d   Rg = %d   fo = %3.2f\n" ,l,rg, Aw);
 		fprintf(fconf,"# w = %d      h = %d    a = %d\n",w,h,a);
 		fprintf(fconf,"#\n");
-		fprintf(fconf,"# Gw = %5.4f   Lambda_w = %5.4d\n",Gw, Lambda_w);
-		fprintf(fconf,"# Go = %5.4f   Lambda_o = %5.4d\n",Go, Lambda_o);
+		fprintf(fconf,"# Gw = %5.4f   Lambda_w = %5.4f\n",Gw, Lambda_w);
+		fprintf(fconf,"# Go = %5.4f   Lambda_o = %5.4f\n",Go, Lambda_o);
 		fprintf(fconf,"#\n");
 		fprintf(fconf,"# eps_SG = %3.2f     eps_WO = %3.2f\n",eps_SG, eps_WO);
 		fprintf(fconf,"# eps_SW = %3.2f     eps_WG = %3.2f\n",eps_SW, eps_WG);
@@ -549,6 +539,18 @@ void openfiles(void)
 		fxyz = fopen(output_file1,"w");	
 
 		fflush(fxyz);
+		
+		// Arquivo r2
+        sprintf(output_file1,"%sgota_3d_L_%d_R_%d_a_%d_h_%d_w_%d_fo_%3.2f_r2.dat",CI,l,rg,a,h,w,Aw);	
+		fr2 = fopen(output_file1,"w");	
+
+		fflush(fr2);
+
+		// Arquivo base
+		sprintf(output_file1,"%sgota_3d_L_%d_R_%d_a_%d_h_%d_w_%d_fo_%3.2f_base.dat",CI,l,rg,a,h,w,Aw);
+		fbase = fopen(output_file1,"w");
+
+		fflush(fbase);
         
 
   } // Fim do IF
@@ -598,9 +600,6 @@ void initialization(void)
 	fprintf(fout,"Número de partículas de óleo    : %d\n",vol_o);
 	fprintf(fout,"Número de partículas de líquido : %d\n",vol);
 	fprintf(fout,"Número de sítios na interface   : %d\n",int_label);
-	fprintf(fout,"H médio                         : %f\n",hm);
-	fprintf(fout,"H máximo                        : %d\n",hmax - h_base);
-	fprintf(fout,"H mínimo                        : %d\n",hmin - h_base);
 	fprintf(fout,"=====================================================================\n"); 
 	fprintf(fout,"\n"); 
 	fflush(stdout);
@@ -619,9 +618,7 @@ void initial_state(int *s, int L, int Rg, int Initialstate)
  	long int count=0;
 	int neigh[26];
 	int x,y,z,xn,yn,zn;
-	int zm, z_teste, nm;
 	double fator;
-/*	int nw, nt,*/
 	double teste;
 
 	l2=L*L;
@@ -703,22 +700,6 @@ void initial_state(int *s, int L, int Rg, int Initialstate)
 							} //fim do ELSE IF
 							/*---------------------------------*/
 
-							/*-------------------------------*/
-							/*Para gerar uma conf ordenada   */
-/*							if (nt < nw)*/
-/*							{*/
-/*		    					*(s+site)=1;*/
-/*								nt++;*/
-/*		    					count++;*/
-/*							} //fim do IF	*/
-/*							else*/
-/*							{*/
-/*		    					*(s+site)=2;*/
-/*								nt++;*/
-/*		    					count++;						*/
-/*							}//fim do ELSE*/
-							/*-------------------------------*/
-							
 						}//fim do ELSE
 
 		  			} //fim do IF
@@ -771,22 +752,7 @@ void initial_state(int *s, int L, int Rg, int Initialstate)
 							} //fim do ELSE IF
 							/*---------------------------------*/
 
-							/*-------------------------------*/
-							/*Para gerar uma conf ordenada   */
-/*							if (nt < nw)*/
-/*							{*/
-/*		    					*(s+site)=1;*/
-/*								nt++;*/
-/*		    					count++;*/
-/*							} //fim do IF	*/
-/*							else*/
-/*							{*/
-/*		    					*(s+site)=2;*/
-/*								nt++;*/
-/*		    					count++;						*/
-/*							}//fim do ELSE*/
-							/*-------------------------------*/
-							
+						
 						}//fim do ELSE
 		  			} //fim do IF
 
@@ -816,39 +782,6 @@ void initial_state(int *s, int L, int Rg, int Initialstate)
       		} //fim do FOR
 		}//fim do FOR   
 	} //fim do FOR
-
-//--------------------------------------------------------------------------------------------
-// Calculando h médio e hmax
-//--------------------------------------------------------------------------------------------
-
-	zm = 0;
-	nm = 0;
-	hmax = 0;
-	hmin = h_base+1;
-
-	for (i=0;i<L;++i) 
-		{
-			for (j=0;j<L;++j) 
-			{
-
-				z_teste = 0;
-				for (k=0;k<L;++k) 
-				{ 
-
-					site=k*l2+L*j+i;
-					if((s[site]==9) && (k>z_teste)) z_teste=k;
-					if((s[site]==9) && (k>hmax)) hmax=k;
-	
-      			} //fim do FOR
-				
-				zm = zm + z_teste;
-				nm++;
-
-			}//fim do FOR   
-		} //fim do FOR  
-
-	zm = zm - h_base;
-	hm = (float)zm/nm;  
 
 //--------------------------------------------------------------------------------------------
 //   Criando a lista de vizinhos
@@ -1166,18 +1099,19 @@ void xyz(int *s, int l, int m)
 void dynamics(int *s,int num_steps, double Aw)
 {
 	int     i,j,k, hs, xi, xf, dx, yi, yf, dy, zi , zf, dz;
-/*	int 	z; */
 	int     site, neigh_site , neigh_index,s_site, s_teste, label,soma, s_neigh; 
 	int     nw,ns,no,ng;
-	double	x_CM, y_CM, z_CM, P, Px, Py, Pz;
+	double	x_CM, y_CM, z_CM;
 	double  temp_e, delta_s, delta_v, delta_g, delta_o, delta_m, delta;
 	long int count=0, count_w=0;
-	int x_just_air = 0, y_just_air = 0, x_pos, y_pos, flag = 0;
+	int x_just_air = 0, y_just_air = 0, x_pos, y_pos;
 
 	x_CM = 0.0;
 	y_CM = 0.0;
 	z_CM = 0.0;
+	
 	// Iterate over yz planes to find the first x plane without water
+	
 	for(i=0; i<l; i++) 
 	{
 		x_just_air = i;
@@ -1196,7 +1130,7 @@ void dynamics(int *s,int num_steps, double Aw)
 		}
 		if(x_just_air > -1) break; // Exit the outermost loop
 	}
-	flag = 0;
+
 	// Iterate over xz planes to find the first y plane without water
 	for(j=0; j<l; j++) 
 	{
@@ -1247,54 +1181,51 @@ void dynamics(int *s,int num_steps, double Aw)
 			}
 		}
 	}
-	// Calculate center of mass and shift back to original range
-	x_CM = fmod((float) x_CM/(float) count_w,l);
-	y_CM = fmod((float) y_CM/(float) count_w,l);
-	z_CM = fmod((float) z_CM/(float) count_w,l);
-
-	if (px_CM == -1 && py_CM == -1 && pz_CM == -1)
+	// Calculate center of mass
+	x_CM = (float) x_CM/(float) count_w;
+	y_CM = (float) y_CM/(float) count_w;
+	z_CM = (float) z_CM/(float) count_w;	
+	
+	if (num_steps==0)
 	{
-		px_CM = x_CM;
-		py_CM = y_CM;
-		pz_CM = z_CM;
-		Px = x_CM - px_CM;
-		Py = y_CM - py_CM;
-		Pz = z_CM - pz_CM;
+		rx_CM[num_steps]= x_CM;
+		ry_CM[num_steps]= y_CM;
+		rz_CM[num_steps]= z_CM;	
+	}
+	else
+	{
+		rx_CM[num_steps]= rx_CM[num_steps-1] +fmod(x_CM-x_CM_o);
+		ry_CM[num_steps]= ry_CM[num_steps-1] +fmod(y_CM-y_CM_o);
+		rz_CM[num_steps]= rz_CM[num_steps-1] +fmod(z_CM-z_CM_o);
+	}
+	
+	fprintf(fr2, "%d %f %f %f\n", num_steps, rx_CM[num_steps],ry_CM[num_steps],rz_CM[num_steps]);
+	
+	// Adjust the center of mass for periodic boundary conditions
+	x_CM = fmod(x_CM,l);
+	y_CM = fmod(y_CM,l);
+	z_CM = fmod(z_CM,l);	
+	
+	x_CM_o=x_CM;
+	y_CM_o=y_CM;
+	z_CM_o=z_CM;
+
+
+	if ((num_steps%dt == 0) && (num_steps!=0))
+	{
+	
+		// Calculate the polarity vector x component
+		Px = rx_CM[num_steps] - rx_CM[num_steps-dt];	
+
+		// Calculate the polarity vector y component
+		Py = ry_CM[num_steps] - ry_CM[num_steps-dt];
+
+		// Calculate the polarity vector z component
+		Pz = rz_CM[num_steps] - rz_CM[num_steps-dt];
+
+		Pz=0; // 2D polarization
+
 		P = sqrt(Px*Px + Py*Py + Pz*Pz);
-	}
-
-	if (num_steps%1 == 0)
-	{
-		
-	// Calculate the polarity vector x component
-	Px = x_CM - px_CM;
-	if (Px > l/2) {	
-		Px -= l;
-	}
-	else if (Px < -l/2) {
-		Px += l;
-	}
-
-	// Calculate the polarity vector y component
-	Py = y_CM - py_CM;
-	if (Py > l/2) {
-		Py -= l;
-	}
-	else if (Py < -l/2) {
-		Py += l;
-	}
-
-	// Calculate the polarity vector z component
-	Pz = z_CM - pz_CM;
-	if (Pz > l/2) {
-		Pz -= l;
-	}
-	else if (Pz < -l/2) {
-		Pz += l;
-	}
-	Pz=0;
-
-	P = sqrt(Px*Px + Py*Py + Pz*Pz);
 	}
 
 	for(j = 0; j < t_vol ; ++j)
@@ -1308,7 +1239,6 @@ void dynamics(int *s,int num_steps, double Aw)
 		site = w_inter[label];
 		hs = (site/l2-h_base);
 		
-/*		z = site/l2;*/
 		s_site=s[site];
 
 		trial++;
@@ -1577,12 +1507,6 @@ void dynamics(int *s,int num_steps, double Aw)
 		if (delta<=0) 
 		{
 
-/*			if(num_steps > n_teste)*/
-/*			{*/
-/*				if( z > (h+h_base+10) && s_teste==2 ) teste_flip_droplet(site,s_teste,delta_s, delta);*/
-/*				if( z < (h+h_base+1) && s_site==2 ) teste_flip_surface(site,s_teste,delta_s, delta);*/
-/*			}*/
-
 			flip_spin(site,s_teste);
 			count++;
 			accepted++;
@@ -1597,12 +1521,6 @@ void dynamics(int *s,int num_steps, double Aw)
 				if(temp_e<exp(-delta/(kB*T))) 
 				{
 
-/*					if(num_steps > n_teste)*/
-/*					{*/
-/*						if( z > (h+h_base+10) && s_teste==2 ) teste_flip_droplet(site,s_teste,delta_s, delta);*/
-/*						if( z < (h+h_base+1) && s_site==2 ) teste_flip_surface(site,s_teste,delta_s, delta);*/
-/*					}*/
-
 					flip_spin(site,s_teste);
 					count++;
 					accepted++;
@@ -1612,9 +1530,7 @@ void dynamics(int *s,int num_steps, double Aw)
 		}//dim do ELSE
 
 	} //fim do FOR
-  px_CM = x_CM;
-  py_CM = y_CM;
-  pz_CM = z_CM;
+
   return;
 }
 /*********************************************************************************************
@@ -2028,20 +1944,35 @@ void remove_from_interface(int site)
 *********************************************************************************************/
 void create_pointers(void)
 {
-  s=create_int_pointer(l3);
-  nv_cw=create_int_pointer(l3);
-  nv_co=create_int_pointer(l3);
+	
+	int i;
+	
+	s=create_int_pointer(l3);
+	nv_cw=create_int_pointer(l3);
+	nv_co=create_int_pointer(l3);
 
-  nv_w=create_int_pointer(l3);
-  nv_o=create_int_pointer(l3);
-  nv_s=create_int_pointer(l3);
-  nv_g=create_int_pointer(l3);
+	nv_w=create_int_pointer(l3);
+	nv_o=create_int_pointer(l3);
+	nv_s=create_int_pointer(l3);
+	  nv_g=create_int_pointer(l3);
 
-  inter_pos=create_int_pointer(l3);
-  w_inter=create_int_pointer(l3);
-  inter_mtx=create_int_pointer(l3);
+	inter_pos=create_int_pointer(l3);
+	w_inter=create_int_pointer(l3);
+	inter_mtx=create_int_pointer(l3);
+  
+	rx_CM=create_double_pointer(mc_steps);
+	ry_CM=create_double_pointer(mc_steps);
+	rz_CM=create_double_pointer(mc_steps);
+  
+	for  (i=0;i<mc_steps;++i)
+	{
+		rx_CM[i]=0.0;
+		ry_CM[i]=0.0;
+		rz_CM[i]=0.0;
+	}
 
-  return;
+
+	return;
 }
 
 
@@ -2060,8 +1991,10 @@ void free_pointers(void)
 	free(inter_pos);
   	free(w_inter);
 	free(inter_mtx);
-
-  return;
+	free(rx_CM);
+  	free(ry_CM);
+	free(rz_CM);
+	return;
 }
 
 /*********************************************************************************************
@@ -2072,28 +2005,13 @@ void measure_angle(int num_steps)
   
 	int i,j,k;
 	int xmin,xmax,ymin,ymax;
-	int xmin_o,xmax_o,ymin_o,ymax_o;
-	int h_film, h_film_o;
 	double H2_B2_x,H2_B2_y;
-	double H2_B2_x_o,H2_B2_y_o;
-	int pil_xmin,pil_xmax,pil_ymin,pil_ymax;
-	int num_pil_x,num_pil_y;
-	int num_pil_x_o,num_pil_y_o;
 	int height,site;
-	double volume_below, volume_below_o;
-	double volume_res, volume_res_o;
-	int vbt, vrt;
+	double volume_below;
+	int vbt;
 	double rx,ry;
-	double rx_o,ry_o;
-	int count_w, count_o;
-	int count_nw, count_no;
-	int nw, no;
-	int int_w, int_o;
-	double per_w, per_o;
-	double frac_w, frac_o;
-	int htest;
-	double vol_p_w,vol_p_o;
-	double x_CM, y_CM, z_CM;
+	int count_w;
+	int nw;
 	int x_just_air , y_just_air , x_pos, y_pos;
 
 // -------------------------------------------------------------------------------------------
@@ -2140,80 +2058,20 @@ void measure_angle(int num_steps)
 	}
 
 // -------------------------------------------------------------------------------------------
-// Determinando a altura do filme para água e óleo
-
-	h_film = 0;
-	h_film_o = 0;
-	count_w=0;
-	count_o=0;
-
-	for(i=0;i<20;++i)
-		for(j=0;j<20;++j)
-			for(k=h+h_base;k<l;++k)
-	{
-
-				site = i +j*l + k*l2;
-				nw=nv_w[site];
-				no=nv_o[site];
-
-				// para água
-				if ((s[site]==1) && (nw>2)) 
-				{
-					++count_w;
-					if (k>h_film) h_film=k;
-				} // fim do IF
-
-				// para óleo
-				if ((s[site]==2) && (no>2)) 
-				{
-					++count_o;
-					if (k>h_film_o) h_film_o=k;
-				} // fim do IF			
-		
-	} //fim do FOR
-
-
-  	h_film-= h+h_base;
-	h_film_o-= h+h_base;
-
-	if (count_w==0)  h_film=0;
-	if (count_o==0)  h_film_o=0;
-
-// -------------------------------------------------------------------------------------------
-// Determinando quantos sítios da interface são agua e óleo
-
-	int_w = 0;
-	int_o = 0;
-
-	for(i=0;i<int_label;++i)
-    {
-		site = w_inter[i];
-
-		if (s[site]==1) ++int_w;
-		if (s[site]==2) ++int_o;
-
-	}
-
-// -------------------------------------------------------------------------------------------
 // Determinando a altura da gota para água e óleo
 // Nesse calculo só entram os sítios que não participam do FILME
 
 	count_w=0;
-	count_o=0;
 
 	drop_height=0;
 	drop_bottom=l;
-	drop_height_o=0;
-	drop_bottom_o=l;
 
 	for(i=0;i<int_label;++i)
     {
 		site = w_inter[i];
 		height = site/l2;
 		nw=nv_w[site];
-		no=nv_o[site];
 		
-		// Só pega sítios de água que não estão no reservatório NEM NOS POROS
 		if ( (s[site]==1) && (height>h+h_base) && (nw>=4)) 
 		{
 
@@ -2223,79 +2081,23 @@ void measure_angle(int num_steps)
 
 		}//fim do IF
 
-		// Só pega sítios de óleo que não estão no reservatório  NEM NOS POROS	
-		if ( (s[site]==2) && (height>h+h_base) && (no>=4)) 
-		{
-
-			++count_o;
-			if (height>drop_height_o) drop_height_o=height;
-			if (height<drop_bottom_o) drop_bottom_o=height;
-
-		}//fim do IF
-
-
     } //fim do FOR
 
   	drop_height-= h+h_base;
-	drop_height_o-= h+h_base;
 
 	if (count_w==0)  drop_height=0;
-	if (count_o==0)  drop_height_o=0;	
-
-	per_w = (float)count_w/int_w;
-	per_o = (float)count_o/int_o;	
-
-// -------------------------------------------------------------------------------------------
-// Determinando numero de vizinhos de mesmo tipo em z=h+hbase
-	
-	count_w=0;
-	count_o=0;
-	count_nw=0;
-	count_no=0;		
-
-	for(i=0;i<l;++i)
-		for(j=0;j<l;++j)
-	{
-
-		site = (h+h_base)*l2+j*l+i;
-		nw=nv_w[site];
-		no=nv_o[site];
-		
-		if (s[site]==1) 
-		{
-			++count_w;
-			count_nw += nw;		
-		}
-
-		if (s[site]==2) 
-		{
-			++count_o;
-			count_no += no;		
-		}
-
-	}//fim do FOR
-
-	frac_w = (float)count_nw/count_w;
-	frac_o = (float)count_no/count_o;
 
 // -------------------------------------------------------------------------------------------
 // Determinando o x e y minimo e maximo da gota para água e óleo
 
 	major_axis_x=0,major_axis_y=0;
-	major_axis_x_o=0,major_axis_y_o=0;
 
 	xmin=l;
 	xmax=0;
 	ymin=l;
 	ymax=0;
 
-	xmin_o=l;
-	xmax_o=0;
-	ymin_o=l;
-	ymax_o=0;
-
 	count_w=0;
-	count_o=0;
 
 	for(i=0;i<l;++i)
 		for(j=0;j<l;++j)
@@ -2316,7 +2118,6 @@ void measure_angle(int num_steps)
 
 		site = (h+h_base)*l2+y_pos*l+x_pos;
 		nw=nv_w[site];
-		no=nv_o[site];
 
 		if ((s[site]==1) && (nw>=2))
 		{
@@ -2326,15 +2127,6 @@ void measure_angle(int num_steps)
 			if (y_pos<ymin) ymin=y_pos;
 			if (y_pos>ymax) ymax=y_pos;
 
-		} //fim do IF
-
-		if (s[site]==2 && (no>=2))
-		{
-			++count_o;
-			if (x_pos<xmin_o) xmin_o=x_pos;
-			if (x_pos>xmax_o) xmax_o=x_pos;
-			if (y_pos<ymin_o) ymin_o=y_pos;
-			if (y_pos>ymax_o) ymax_o=y_pos;
 		} //fim do IF
 
 	} //fim dos FOR
@@ -2347,33 +2139,6 @@ void measure_angle(int num_steps)
 		ymax=0;
 	} // fim do IF
 
-	if (count_o==0)  
-	{
-		xmin_o=0;
-		xmax_o=0;
-		ymin_o=0;
-		ymax_o=0;
-	} // fim do IF
-
-// -------------------------------------------------------------------------------------------
-// Determinando número de pilares que a gota toca - água e óleo
-
-	pil_xmin = (int)xmin/(w+a);
-	pil_xmax = (int)xmax/(w+a);
-	pil_ymin = (int)ymin/(w+a);
-	pil_ymax = (int)ymax/(w+a);
-
-	num_pil_x = pil_xmax - pil_xmin;
-	num_pil_y = pil_ymax - pil_ymin;
-
-	pil_xmin = (int)xmin_o/(w+a);
-	pil_xmax = (int)xmax_o/(w+a);
-	pil_ymin = (int)ymin_o/(w+a);
-	pil_ymax = (int)ymax_o/(w+a);
-
-	num_pil_x_o = pil_xmax - pil_xmin;
-	num_pil_y_o = pil_ymax - pil_ymin;
-
 // -------------------------------------------------------------------------------------------
 // Determinando o raio da base da gota em x e y - água e óleo
 
@@ -2381,20 +2146,11 @@ void measure_angle(int num_steps)
 	base_radius_y = 0.5*(ymax-ymin);
 	centre_x =(int) (0.5*(xmax+xmin));
 	centre_y =(int) (0.5*(ymax+ymin));
-
-	base_radius_x_o = 0.5*(xmax_o-xmin_o);
-	base_radius_y_o = 0.5*(ymax_o-ymin_o);
-	centre_x_o =(int) (0.5*(xmax_o+xmin_o));
-	centre_y_o =(int) (0.5*(ymax_o+ymin_o));
 // -------------------------------------------------------------------------------------------
 // Caclulando as hipotenusas - água e óleo
 
 	H2_B2_x=drop_height*drop_height+base_radius_x*base_radius_x;
 	H2_B2_y=drop_height*drop_height+base_radius_y*base_radius_y;
-
-	H2_B2_x_o=drop_height_o*drop_height_o+base_radius_x_o*base_radius_x_o;
-	H2_B2_y_o=drop_height_o*drop_height_o+base_radius_y_o*base_radius_y_o;
-
 // -------------------------------------------------------------------------------------------
 // Raio da gota em x e y - água e óleo
 
@@ -2406,23 +2162,12 @@ void measure_angle(int num_steps)
 
 	drop_radius_x = rx;
 	drop_radius_y = ry;
-
-	rx_o = H2_B2_x_o/(2.0*drop_height_o);
-	if(rx_o>(l/2)) rx_o=(float)l/2;
-
-	ry_o = H2_B2_y_o/(2.0*drop_height_o);
-	if(ry_o>(l/2)) ry_o=(float)l/2;
-
-	// preciso pra visualizacao
-	drop_radius_x_o = rx_o;
-	drop_radius_y_o = ry_o;
-
+	
 // ------------------------------------------------------------------------------------------- 
 // angulos - água  e óleo
 
 	angle_x = asin(base_radius_x/rx);
 	angle_y = asin(base_radius_y/ry);
-
 
 	if (drop_height>rx) 
 	{
@@ -2436,23 +2181,6 @@ void measure_angle(int num_steps)
 
 	angle_x = angle_x*180.0/M_PI; 
 	angle_y = angle_y*180.0/M_PI;
- 
-
-	angle_x_o = asin(base_radius_x_o/rx_o);
-	angle_y_o = asin(base_radius_y_o/ry_o);
-
-	if (drop_height_o>rx_o) 
-	{
-		angle_x_o = M_PI - angle_x_o;
-	} // fim do IF
-
-	if (drop_height_o>ry_o) 
-	{
-		angle_y_o = M_PI - angle_y_o;
-	}// fim do IF
-
-	angle_x_o = angle_x_o*180.0/M_PI ;
-	angle_y_o = angle_y_o*180.0/M_PI; 
 
 	if(num_steps > (mc_steps/2))
 	{
@@ -2464,7 +2192,6 @@ void measure_angle(int num_steps)
 // volume entre os pilares - água e óleo
 
 	volume_below=0;
-	volume_below_o=0;
 	vbt=0;
 
 	for(i=0;i<=l;i++) 
@@ -2478,136 +2205,17 @@ void measure_angle(int num_steps)
 				site = i +j*l + k*l2;
 
 				if( (s[site]==1) ) volume_below++;
-				if( (s[site]==2) ) volume_below_o++;
 
 			}//fim do FOR
 		}//fim do FOR
 	}//fim do FOR
 
-	volume_below = volume_below/n_w;
-	volume_below_o = volume_below_o/n_o;
+/*	volume_below = volume_below/n_w;*/
+/*	volume_below_o = volume_below_o/n_o;*/
 
-// ------------------------------------------------------------------------------------------- 
-// volume no reservatório - água e óleo
-
-	volume_res=0;
-	volume_res_o=0;
-	vrt=0;
-
-	for(i=0;i<=l;i++) 
-	{
-		for(j=0;j<=l;j++) 
-		{
-      		for(k=0;k<(h_base);k++) 
-			{
-			
-				vrt++;
-				site = i +j*l + k*l2;
-
-				if( (s[site]==1) ) volume_res++;
-				if( (s[site]==2) ) volume_res_o++;
-
-			}//fim do FOR
-		}//fim do FOR
-	}//fim do FOR
-
-
-	volume_res = volume_res/n_w;
-	volume_res_o = volume_res_o/n_o;
-// ------------------------------------------------------------------------------------------- 
-// Porcentagem de água e óleo na gota
-
-	count_w=0;
-	count_o=0;
-
-	if(h_film==0 && h_film_o==0) 
-	{
-		htest=h+h_base;
-
-	} //fim do IF
-	else if (h_film <= h_film_o)
-	{
-		htest=h+h_base + h_film_o;
-	}//fim do ELSE IF
-	else
-	{
-		htest=h+h_base + h_film;
-	} //fim do IF
-
-	for(i=0;i<=l;i++) 
-	{
-		for(j=0;j<=l;j++) 
-		{
-      		for(k=htest;k<l;k++) 
-			{
-				site = i +j*l + k*l2;
-
-				if( (s[site]==1) ) count_w++;
-				if( (s[site]==2) ) count_o++;
-
-			}//fim do FOR
-		}//fim do FOR
-	}//fim do FOR
-
-	vol_p_w = (float)count_w/(count_w+count_o);
-	vol_p_o = (float)count_o/(count_w+count_o);
-
-
-	if(num_steps > (mc_steps/2))
-	{
-		fvmed_w = fvmed_w+vol_p_w;
-		++c_fv_w;
-
-		fvmed_o = fvmed_o+vol_p_o;
-		++c_fv_o;
-	}//fim do IF
-
-// -------------------------------------------------------------------------------------------
-// Rotina que calcula o centro de massa para uma gota de água
-	x_CM = 0.0;
-	y_CM = 0.0;
-	z_CM = 0.0;
-	count_w = 0;
-
-	for(i=0;i<=l;i++) 
-	{
-		for(j=0;j<=l;j++) 
-		{
-			for(k=h_base;k<l;k++) 
-			{
-				site = i +j*l + k*l2;
-				if( (s[site]==1) ) 
-				{
-					count_w++;
-
-					if(i < x_just_air){
-						x_pos = i + l;
-					} else
-					{
-						x_pos = i;
-					}
-					if(j < y_just_air){
-						y_pos = j + l;
-					} else
-					{
-						y_pos = j;
-					}
-					x_CM = x_CM + x_pos;
-					y_CM = y_CM + y_pos;
-					z_CM = z_CM + k;
-            	}
-			}
-		}
-	}
-	// Calculate center of mass and shift back to original range
-	x_CM = fmod((float) x_CM/(float) count_w,l);
-	y_CM = fmod((float) y_CM/(float) count_w,l);
-	z_CM = fmod((float) z_CM/(float) count_w,l);
 // -------------------------------------------------------------------------------------------
   
-	//fprintf(fp1,"%8d %d %d %d %f %f %f %f %f %f %f %f %f %f %f %f %f %d %d %d %d %f %f %f %f %f %f %f %f %f %f %f %f %f\n", num_steps, (int)vol, (int)vol_w, (int)vol_o, calculate_energy(), base_radius_x, base_radius_y, base_radius_x_o, base_radius_y_o, rx, ry, rx_o, ry_o, angle_x, angle_y, angle_x_o, angle_y_o, num_pil_x,num_pil_y, num_pil_x_o,num_pil_y_o, volume_below, volume_below_o, volume_res,volume_res_o, per_w, per_o, frac_w, frac_o, vol_p_w, vol_p_o, x_CM, y_CM, z_CM);
-	// The same line as above, but without (int)vol_o, base_radius_x_o, base_radius_y_o, rx_o, ry_o, angle_x_o, angle_y_o, num_pil_x_o, num_pil_y_o, volume_below_o, volume_res_o, per_o, frac_o, vol_p_o
-	fprintf(fp1,"%8d %d %d %f %f %f %f %f %f %f %f %f %f %f %f %f\n", num_steps, (int)vol, (int)vol_w, calculate_energy(), base_radius_x, base_radius_y, rx, ry, angle_x, angle_y, volume_below, per_w, frac_w, x_CM, y_CM, z_CM);
+	fprintf(fp1,"%8d %d %d %f %f %f %f %f %f %f %f 1 1 %f %f %f\n", num_steps, (int)vol, (int)vol_w, calculate_energy(), base_radius_x, base_radius_y, rx, ry, angle_x, angle_y, volume_below, x_CM_o, y_CM_o, z_CM_o);
 	fflush(fp1);
 
   return;
@@ -2803,8 +2411,8 @@ double calculate_energy(void)
 	fprintf(fout,"Total          : %f \n",total);
  	fprintf(fout,"Interfacial    : %f        num_interface: %ld\n",ene_interface,num_interface/2/t_neigh );
 	fprintf(fout,"Gravitacional  : %f             int/grav: %f\n",ene_grav,ene_interface/ene_grav);
-	fprintf(fout,"Lagrange Total : %d \n",Lambda_w*(vol-t_vol)*(vol-t_vol));
-	fprintf(fout,"Lagrange Fração: %d \n",Lambda_o*(vol_o-t_vol_o)*(vol_o-t_vol_o));
+	fprintf(fout,"Lagrange Total : %f \n",Lambda_w*(vol-t_vol)*(vol-t_vol));
+	fprintf(fout,"Lagrange Fração: %f \n",Lambda_o*(vol_o-t_vol_o)*(vol_o-t_vol_o));
 	fprintf(fout,"\n\n\n");
 
 	return total;
@@ -2837,76 +2445,32 @@ void save_conf(int num_steps,int iout)
     
   		fclose(flast);
 	} //fim do if
-	/*
+	
 	else if(iout==0) 
 	{	
-		if (num_steps%100==0){
-			fprintf(fconf,"# tempo  %d\n",num_steps);
+		if (num_steps%10==0){
+			// fprintf(fconf,"# tempo  %d\n",num_steps);
+			fprintf(fbase,"# tempo  %d\n",num_steps);
 			for(i=0;i<int_label;i++) 
 			{
 				if(s[w_inter[i]]==1 || s[w_inter[i]]==2 ) 
 				{
-					fprintf(fconf,"%d  %d\n",w_inter[i], s[w_inter[i]] );
-
+					// fprintf(fconf,"%d  %d\n",w_inter[i], s[w_inter[i]] );
+					if (w_inter[i]/l2 == h_base + h + 3)
+					{
+						fprintf(fbase,"%d  %d\n",w_inter[i], s[w_inter[i]] );
+					}
 				} //fim o IF
 
 			} //fim do FOR
 
-			fflush(fconf);
-			fprintf(fconf,"\n\n"); 
+			// fflush(fconf);
+			// fprintf(fconf,"\n\n"); 
+			fflush(fbase);
+			fprintf(fbase,"\n\n");
 		} //fim do IF
 
-	} //fim do ELSE IF */
-
-	return;
-}
-
-/*********************************************************************************************
-*                              Rotina que testa a energia do flip                            *
-*********************************************************************************************/
-void teste_flip_droplet(int site, int s_teste, double delta_s, double delta)
-{
-
-	int nw,no,ng,ns;
-	double ei, ef;
-	
-	nw = nv_w[site];
-	ng = nv_g[site];
-	no = nv_o[site];
-	ns = nv_s[site];
-
-
-	if(s[site]==1) ei= ng*eps_WG + ns*eps_SW + no*eps_WO;
-	if(s[site]==0) ei= nw*eps_WG + ns*eps_SG + no*eps_OG;
-
-	ef = nw*eps_WO + ng*eps_OG + ns*eps_SO;
-
-	fprintf(foil ,"%10d %2d %2d %3d %3d %3d %3d %6.2f %6.2f %6.2f %6.2f %6.2f\n", site, s[site], s_teste, nw, no, ng, ns, ei, ef, ef-ei,delta_s, delta);
-
-	return;
-}
-
-/*********************************************************************************************
-*                              Rotina que testa a energia do flip                            *
-*********************************************************************************************/
-void teste_flip_surface(int site, int s_teste, double delta_s, double delta)
-{
-
-	int nw,no,ng,ns;
-	double ei, ef;
-	
-	nw = nv_w[site];
-	ng = nv_g[site];
-	no = nv_o[site];
-	ns = nv_s[site];
-
-
-	if(s_teste==1) ef= ng*eps_WG + ns*eps_SW + no*eps_WO;
-	if(s_teste==0) ef= nw*eps_WG + ns*eps_SG + no*eps_OG;
-
-	ei = nw*eps_WO + ng*eps_OG + ns*eps_SO;
-
-	fprintf(fwat ,"%10d %2d %2d %3d %3d %3d %3d %6.2f %6.2f %6.2f %6.2f %6.2f\n", site, s[site], s_teste, nw, no, ng, ns, ei, ef, ef-ei, delta_s, delta);
+	} //fim do ELSE IF 
 
 	return;
 }
