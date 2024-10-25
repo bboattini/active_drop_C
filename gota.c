@@ -525,6 +525,36 @@ void openfiles(void)
 		fflush(fconf);
 
 		fflush(stdout);
+	  // Arquivo da Base
+		sprintf(output_file1,"%sgota_3d_L_%d_R_%d_a_%d_h_%d_w_%d_fo_%3.2f_base.dsf",CI,l,rg,a,h,w,Aw);
+
+		fbase = fopen(output_file1,"w");
+
+		fprintf(fbase,"# =====================================================================\n");
+		fprintf(fbase,"# =                     Parâmetros da Simulação                       =\n");
+		fprintf(fbase,"# =====================================================================\n");
+		fprintf(fbase,"# Gota - CB (1) ou Wenzel(2)  3D : %d\n",initialstate);
+		fprintf(fbase,"#\n");
+		fprintf(fbase,"# L = %d   Rg = %d   fo = %3.2f\n" ,l,rg, Aw);
+		fprintf(fbase,"# w = %d      h = %d    a = %d\n",w,h,a);
+		fprintf(fbase,"#\n");
+		fprintf(fbase,"# Gw = %5.4f   Lambda_w = %5.4f\n",Gw, Lambda_w);
+		fprintf(fbase,"# Go = %5.4f   Lambda_o = %5.4f\n",Go, Lambda_o);
+		fprintf(fbase,"#\n");
+		fprintf(fbase,"# eps_SG = %3.2f     eps_WO = %3.2f\n",eps_SG, eps_WO);
+		fprintf(fbase,"# eps_SW = %3.2f     eps_WG = %3.2f\n",eps_SW, eps_WG);
+		fprintf(fbase,"# eps_SO = %3.2f     eps_OG = %3.2f\n",eps_SO, eps_OG);
+		fprintf(fbase,"#\n");
+		fprintf(fbase,"# Temp = %4.2f           kB = %3.2f\n",temp,kB);
+		fprintf(fbase,"#\n");
+		fprintf(fbase,"# Total time = %d\n",mc_steps);
+		fprintf(fbase,"# =====================================================================\n");
+		fprintf(fbase,"# t and interface's sites\n");
+
+		fflush(fbase);
+
+		fflush(stdout);
+
 
 /*#endif*/
 
@@ -545,12 +575,6 @@ void openfiles(void)
 		fr2 = fopen(output_file1,"w");	
 
 		fflush(fr2);
-
-		// Arquivo base
-		sprintf(output_file1,"%sgota_3d_L_%d_R_%d_a_%d_h_%d_w_%d_fo_%3.2f_base.dat",CI,l,rg,a,h,w,Aw);
-		fbase = fopen(output_file1,"w");
-
-		fflush(fbase);
         
 
   } // Fim do IF
