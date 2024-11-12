@@ -38,9 +38,9 @@ void save_conf(int num_steps, int iout);
 *                       Declarando parâmetros da simulação - técnicos                        *
 *********************************************************************************************/
 
-#define mc_steps			100  // Número de passos de MC totais
-#define n_mesure			10   // Intervalo para salvar medidas
-#define n_teste				9990   // Intervalo para salvar medidas
+#define mc_steps			100000  // Número de passos de MC totais
+#define n_mesure			1   // Intervalo para salvar medidas
+#define n_teste				99990   // Intervalo para salvar medidas
 
 #define temp				13.0  // Temperatura
 #define kB					1.0  // Constante de Boltzman
@@ -1218,12 +1218,12 @@ void dynamics(int *s,int num_steps, double Aw)
 	}
 	else
 	{
-		rx_CM[num_steps]= rx_CM[num_steps-1] +fmod(x_CM-x_CM_o);
-		ry_CM[num_steps]= ry_CM[num_steps-1] +fmod(y_CM-y_CM_o);
-		rz_CM[num_steps]= rz_CM[num_steps-1] +fmod(z_CM-z_CM_o);
+		rx_CM[num_steps]= rx_CM[num_steps-1] +fmod(x_CM-x_CM_o,l);
+		ry_CM[num_steps]= ry_CM[num_steps-1] +fmod(y_CM-y_CM_o,l);
+		rz_CM[num_steps]= rz_CM[num_steps-1] +fmod(z_CM-z_CM_o,l);
 	}
 	
-	fprintf(fr2, "%d %f %f %f\n", num_steps, rx_CM[num_steps],ry_CM[num_steps],rz_CM[num_steps]);
+	// fprintf(fr2, "%d %f %f %f\n", num_steps, rx_CM[num_steps],ry_CM[num_steps],rz_CM[num_steps]);
 	
 	// Adjust the center of mass for periodic boundary conditions
 	x_CM = fmod(x_CM,l);
@@ -2472,15 +2472,15 @@ void save_conf(int num_steps,int iout)
 	
 	else if(iout==0) 
 	{	
-		if (num_steps%10==0){
+		if (num_steps%10==0  && num_steps< 10000){
 			// fprintf(fconf,"# tempo  %d\n",num_steps);
-			fprintf(fbase,"# tempo  %d\n",num_steps);
+			fprintf(fbase,"# tempo  %d xCM  %d yCM  %d\n",num_steps, (int)x_CM_o, (int)y_CM_o);
 			for(i=0;i<int_label;i++) 
 			{
 				if(s[w_inter[i]]==1 || s[w_inter[i]]==2 ) 
 				{
 					// fprintf(fconf,"%d  %d\n",w_inter[i], s[w_inter[i]] );
-					if (w_inter[i]/l2 == h_base + h + 3)
+					if (w_inter[i]/l2 == h_base + h + 3 || w_inter[i]%l == (int) x_CM_o || (w_inter[i]/l)%l == (int) y_CM_o)
 					{
 						fprintf(fbase,"%d  %d\n",w_inter[i], s[w_inter[i]] );
 					}
