@@ -39,6 +39,8 @@ def file_crawler(path = PATH):
     last_configuration_files = []
     measures_files = []
     general_data_files = []
+    base_files = []
+    r2_files = []
     for item in items:
         full_item_path = os.path.join(path, item)
         if os.path.isdir(full_item_path):
@@ -49,6 +51,10 @@ def file_crawler(path = PATH):
                 for File in files:
                     if 'conf.dsf' in File:
                         configuration_files.append(os.path.join(full_item_path, File))
+                    elif 'base.dsf' in File:
+                        base_files.append(os.path.join(full_item_path, File))
+                    elif 'r2.dat' in File:
+                        r2_files.append(os.path.join(full_item_path, File))
                     elif 'LAST.dsf' in File:
                         last_configuration_files.append(os.path.join(full_item_path, File))
                     elif '.out' in File:
@@ -57,7 +63,12 @@ def file_crawler(path = PATH):
                         measures_files.append(os.path.join(full_item_path, File))
                     
 
-    return {'config': configuration_files ,'last': last_configuration_files, 'measures': measures_files, 'general': general_data_files, }
+    return {'config': configuration_files ,
+            'last': last_configuration_files, 
+            'measures': measures_files, 
+            'general': general_data_files, 
+            'base': base_files,
+            'r2': r2_files}
 
 def time_series_to_frequency_array(x_data, y_data = [], bin = 1):
     if len(y_data) == 0:
