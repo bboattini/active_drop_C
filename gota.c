@@ -491,7 +491,8 @@ void openfiles(void)
 		fprintf(fp1,"# Total time = %d\n",mc_steps);
 		fprintf(fp1,"# =====================================================================\n");
 		//fprintf(fp1,"#  t        V      Vw    Vo       E           theta_x  theta_y     R_x        R_y    B px  py   B_x         B_y     H   vb\n");
-   		fprintf(fp1,"#  t        V      Vw       E           theta_x  theta_y     R_x        R_y    B px  py   B_x         B_y     H   vb\n");
+		fprintf(fp1,"#  t        V      Vw      E           B_x         B_y         Rx        Ry        theta_x  theta_y  vb      nulo1 nulo2 x_CM_o    y_CM_o    z_CM_o")
+   		//fprintf(fp1,"#  t        V      Vw       E           theta_x  theta_y     R_x        R_y    B px  py   B_x         B_y     H   vb\n");
 		fflush(fp1);
     
 		fflush(stdout);
