@@ -164,6 +164,7 @@ int cont; //controla o numero de continuacoes de uma dada simualcao
 int file_in=0,confstep,iconf;
 long int tempo_in=0;
 unsigned int numsteps;
+char lixo;
 
 /*********************************************************************************************
 ==============================================================================================
@@ -407,7 +408,6 @@ int main(int argc,char *argv[])
 *********************************************************************************************/
 void openfiles(void)
 {
-	char lixo;
 	
 	file_in = 1;
 
@@ -421,41 +421,57 @@ void openfiles(void)
     } // Fim do IF
 
 //--------------------------------------------------------------------------------------------
-//   Arquivos neceessários para continuar um run anterior - Olhar melhor
+//   Continuando run anterior ----- IMPLEMENTAR
 //--------------------------------------------------------------------------------------------
-	else 
+
+	if(file_in==1) 
 	{
-		if((fscanf(fp_in,"%c %ld %d",&lixo,&tempo_in,&confstep)!=3)) 
+	
+		if((fscanf(fp_in,"%c %ld %d %f %f %f %f %f %f",&lixo,&tempo_in, &n_w, &x_CM_o, &y_CM_o, &z_CM_o, &Px, &Py, &Pz)!=9)) 
 		{
-		fprintf(stderr,"\n\n ERRO lendo arq de entrada: primeira linha\n\n");
-		exit(-1); 
+			fprintf(stderr,"\n\n ERRO lendo arq de entrada: primeira linha\n\n");
+			exit(-1); 
     	}// Fim do IF
 
 
-    	fprintf(stderr,"Último tempo: %ld\n",tempo_in);
-    	fprintf(stderr,"Última amostra: %d\n",confstep);
-    	fprintf(stderr,"Lixo: %c\n",lixo);
+		fprintf(stderr,"Último tempo: %ld\n",tempo_in);
     	numsteps = tempo_in;
     	if(numsteps==mc_steps) 
 		{
-			fprintf(stderr,"\n\nESTA AMOSTRA JA ACABOU! SE QUISER AUMENTAR O TEMPO DE \n");
-			fprintf(stderr,"SIMULACAO, AUMENTE A VARIAVEL TOTALSTEPS!!! \n\n");
+			fprintf(stderr,"\n\n ESTA AMOSTRA JA ACABOU! SE QUISER AUMENTAR O TEMPO DE \n");
+			fprintf(stderr,"       SIMULACAO, AUMENTE A VARIAVEL MC_STEPS!!! \n\n");
 			exit(1);
 		}// Fim do IF
 
 	    numsteps++;
 	    fclose(fp_in);
-	    // leio os sitios da interface
 	    fflush(stdout); 
   
     	// Nome do arquivo de saída 
-		sprintf(output_file1,"%sgota_3d_L_%d_R_%d_a_%d_h_%d_w_%d_fo_%3.2f.dsf",CI,l,rg,a,h,w,Aw);
-    
+		sprintf(output_file1,"%sgota_3d_L_%d_R_%d.dsf",CI,l,rg);
 		fp1 = fopen(output_file1,"a");
 		fprintf(fp1,"### Continuando..\n");
 	    fflush(fp1);
-    
 	    fflush(stdout);
+	    
+		// Arquivo xyz init
+        sprintf(output_file1,"%sgota_3d_L_%d_R_%d_init.xyz",CI,l,rg);	
+		finit = fopen(output_file1,"w");	
+		fflush(finit);
+
+		// Arquivo xyz
+        sprintf(output_file1,"%sgota_3d_L_%d_R_%d.xyz",CI,l,rg);	
+		fxyz = fopen(output_file1,"w");	
+		fflush(fxyz); 	   
+		
+		// Arquivo de Conficguração
+		sprintf(output_file1,"%sgota_3d_L_%d_R_%d_conf.dsf", CI,l,rg);
+		fconf = fopen(output_file1,"a");
+		fprintf(fconf,"### Continuando..\n");
+		fflush(fconf);
+		fflush(stdout); 
+	    
+	    
    
 	}// Fim do ELSE
 
@@ -638,13 +654,14 @@ void initial_state(int *s, int L, int Rg, int Initialstate)
 {
   
 	int i,j,k;
+	int ii, jj;
 	int l2,l3,rg2;
-	int site;
+	int site, st1, st2;
+	int nnp, sread, site_read;
  	long int count=0;
 	int neigh[26];
 	int x,y,z,xn,yn,zn;
 	double fator;
-	double teste;
 
 	l2=L*L;
 	l3=l2*L;
@@ -666,6 +683,41 @@ void initial_state(int *s, int L, int Rg, int Initialstate)
       w_inter[i]=-1;
 
     } //Fim do FOR
+
+//--------------------------------------------------------------------------------------------
+//   Se estou continuando uma simu antiga
+//--------------------------------------------------------------------------------------------
+	if(file_in==1) 
+	{
+
+		sprintf(input_file,"%sgota_3d_L_%d_R_%d_LAST.dsf",CI,l,rg);
+		fp_in = fopen(input_file,"r");
+		
+		if((fscanf(fp_in,"%c %ld %d %f %f %f %f %f %f",&lixo,&tempo_in, &nnp, &x_CM_o, &y_CM_o, &z_CM_o, &Px, &Py, &Pz)!=9)) 
+		{
+			fprintf(stderr,"\n\n ERRO lendo arq de entrada: primeira linha\n\n");
+			exit(-1); 
+    	}// Fim do IF
+
+		rx_CM[tempo_in]= x_CM_o;
+		ry_CM[tempo_in]= y_CM_o;
+		rz_CM[tempo_in]= z_CM_o;
+    	
+    	for(i=0; i<nnp;i++)
+    	{
+    	
+			if((fscanf(fp_in,"%d %d",&site_read, &sread)!=2))
+			{
+				fprintf(stderr,"\n\n ERRO lendo arq de entrada: primeira linha\n\n");
+				exit(-1); 
+    		}// Fim do IF    	
+    		
+    		s[site_read]=sread;
+    	
+    	}
+
+
+	}// Fim do IF
 
 //--------------------------------------------------------------------------------------------
 //   Criando uma nova gota
@@ -2455,7 +2507,7 @@ void save_conf(int num_steps,int iout)
 	{	
 		sprintf(output_file1,"%sgota_3d_L_%d_R_%d_a_%d_h_%d_w_%d_fo_%3.2f_LAST.dsf",CI,l,rg,a,h,w,Aw);
 		flast = fopen(output_file1,"w");
-		fprintf(flast,"# %d\n",num_steps);
+		fprintf(flast,"# %d %f %f %f %f %f %f\n",num_steps,n_w,x_CM_o, y_CM_o,z_CM_o, Px, Py, Pz);
 
 
 		for(i=0;i<l3;i++) 
