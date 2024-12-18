@@ -1271,9 +1271,9 @@ void dynamics(int *s,int num_steps, double Aw)
 	}
 	else
 	{
-		rx_CM[num_steps]= rx_CM[num_steps-1] +fmod(x_CM-x_CM_o,l);
-		ry_CM[num_steps]= ry_CM[num_steps-1] +fmod(y_CM-y_CM_o,l);
-		rz_CM[num_steps]= rz_CM[num_steps-1] +fmod(z_CM-z_CM_o,l);
+		rx_CM[num_steps]= rx_CM[num_steps-1] +fmod(x_CM-x_CM_o,l/2);
+		ry_CM[num_steps]= ry_CM[num_steps-1] +fmod(y_CM-y_CM_o,l/2);
+		rz_CM[num_steps]= rz_CM[num_steps-1] +fmod(z_CM-z_CM_o,l/2);
 	}
 	
 	// fprintf(fr2, "%d %f %f %f\n", num_steps, rx_CM[num_steps],ry_CM[num_steps],rz_CM[num_steps]);
