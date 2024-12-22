@@ -38,17 +38,17 @@ void save_conf(int num_steps, int iout);
 *                       Declarando parâmetros da simulação - técnicos                        *
 *********************************************************************************************/
 
-#define mc_steps			100000  // Número de passos de MC totais
-#define n_mesure			1   // Intervalo para salvar medidas
+#define mc_steps			100	  	// Número de passos de MC totais
+#define n_mesure			1   	// Intervalo para salvar medidas
 #define n_teste				99990   // Intervalo para salvar medidas
 
-#define temp				13.0  // Temperatura
-#define kB					1.0  // Constante de Boltzman
+#define temp				13.0  	// Temperatura
+#define kB					1.0  	// Constante de Boltzman
 
 #define t_neigh				26   // Número de vizinhos
 #define t_close_neigh		18   // Número de vizinhos próximos 
 
-#define NUM_CONF			1 // DEIXAR IGUAL A 1 !!
+#define NUM_CONF			1 	// DEIXAR IGUAL A 1 !!
 
 /*********************************************************************************************
 *                    Declarando Parâmetros constantes durante a simulação                    *
@@ -368,8 +368,6 @@ int main(int argc,char *argv[])
 	fprintf(fout,"Fração de óleo                  : %f\n",fo);
 	fprintf(fout,"Fração de água                  : %f\n",fw);
 	fprintf(fout,"Ângulo de contato			    : %f\n",thmed/c_theta);
-	fprintf(fout,"Fração de água na gota		    : %f\n",fvmed_w/c_fv_w);
-	fprintf(fout,"Fração de óleo na gota		    : %f\n",fvmed_o/c_fv_o);
 	fprintf(fout,"=====================================================================\n");
 	fprintf(fout,"\n");
 	fflush(stdout);
@@ -427,7 +425,7 @@ void openfiles(void)
 	if(file_in==1) 
 	{
 	
-		if((fscanf(fp_in,"%c %ld %d %f %f %f %f %f %f",&lixo,&tempo_in, &n_w, &x_CM_o, &y_CM_o, &z_CM_o, &Px, &Py, &Pz)!=9)) 
+		if((fscanf(fp_in,"%c %ld %d %lf %lf %lf %lf %lf %lf",&lixo,&tempo_in, &n_w, &x_CM_o, &y_CM_o, &z_CM_o, &Px, &Py, &Pz)!=9)) 
 		{
 			fprintf(stderr,"\n\n ERRO lendo arq de entrada: primeira linha\n\n");
 			exit(-1); 
@@ -448,30 +446,39 @@ void openfiles(void)
 	    fflush(stdout); 
   
     	// Nome do arquivo de saída 
-		sprintf(output_file1,"%sgota_3d_L_%d_R_%d.dsf",CI,l,rg);
+		sprintf(output_file1,"%sgota_3d_L_%d_R_%d_a_%d_h_%d_w_%d_fo_%3.2f.dsf",CI,l,rg,a,h,w,Aw);
 		fp1 = fopen(output_file1,"a");
 		fprintf(fp1,"### Continuando..\n");
 	    fflush(fp1);
 	    fflush(stdout);
+
+		// Arquivo raio da base
+		sprintf(output_file1,"%sgota_3d_L_%d_R_%d_a_%d_h_%d_w_%d_fo_%3.2f_base.dsf",CI,l,rg,a,h,w,Aw);
+		fbase = fopen(output_file1,"a");
+	    fflush(fbase);
 	    
 		// Arquivo xyz init
-        sprintf(output_file1,"%sgota_3d_L_%d_R_%d_init.xyz",CI,l,rg);	
+        sprintf(output_file1,"%sgota_3d_L_%d_R_%d_a_%d_h_%d_w_%d_fo_%3.2f_init.xyz",CI,l,rg,a,h,w,Aw);
 		finit = fopen(output_file1,"w");	
 		fflush(finit);
 
 		// Arquivo xyz
-        sprintf(output_file1,"%sgota_3d_L_%d_R_%d.xyz",CI,l,rg);	
+        sprintf(output_file1,"%sgota_3d_L_%d_R_%d_a_%d_h_%d_w_%d_fo_%3.2f.xyz",CI,l,rg,a,h,w,Aw);	
 		fxyz = fopen(output_file1,"w");	
 		fflush(fxyz); 	   
 		
 		// Arquivo de Conficguração
-		sprintf(output_file1,"%sgota_3d_L_%d_R_%d_conf.dsf", CI,l,rg);
+		sprintf(output_file1,"%sgota_3d_L_%d_R_%d_a_%d_h_%d_w_%d_fo_%3.2f_conf.dsf", CI,l,rg,a,h,w,Aw);
 		fconf = fopen(output_file1,"a");
 		fprintf(fconf,"### Continuando..\n");
 		fflush(fconf);
 		fflush(stdout); 
-	    
-	    
+
+		// Arquivo r2
+        sprintf(output_file1,"%sgota_3d_L_%d_R_%d_a_%d_h_%d_w_%d_fo_%3.2f_r2.dat",CI,l,rg,a,h,w,Aw);	
+		fr2 = fopen(output_file1,"a");	
+	    fflush(fr2);
+	        
    
 	}// Fim do ELSE
 
@@ -507,7 +514,7 @@ void openfiles(void)
 		fprintf(fp1,"# Total time = %d\n",mc_steps);
 		fprintf(fp1,"# =====================================================================\n");
 		//fprintf(fp1,"#  t        V      Vw    Vo       E           theta_x  theta_y     R_x        R_y    B px  py   B_x         B_y     H   vb\n");
-		fprintf(fp1,"#  t        V      Vw      E           B_x         B_y         Rx        Ry        theta_x  theta_y  vb      nulo1 nulo2 x_CM_o    y_CM_o    z_CM_o")
+		fprintf(fp1,"#  t        V      Vw      E           B_x         B_y         Rx        Ry        theta_x  theta_y  vb      nulo1 nulo2 x_CM_o    y_CM_o    z_CM_o");
    		//fprintf(fp1,"#  t        V      Vw       E           theta_x  theta_y     R_x        R_y    B px  py   B_x         B_y     H   vb\n");
 		fflush(fp1);
     
@@ -544,7 +551,6 @@ void openfiles(void)
 		fflush(stdout);
 	  // Arquivo da Base
 		sprintf(output_file1,"%sgota_3d_L_%d_R_%d_a_%d_h_%d_w_%d_fo_%3.2f_base.dsf",CI,l,rg,a,h,w,Aw);
-
 		fbase = fopen(output_file1,"w");
 
 		fprintf(fbase,"# =====================================================================\n");
@@ -571,9 +577,6 @@ void openfiles(void)
 		fflush(fbase);
 
 		fflush(stdout);
-
-
-/*#endif*/
 
 		// Arquivo xyz init
         sprintf(output_file1,"%sgota_3d_L_%d_R_%d_a_%d_h_%d_w_%d_fo_%3.2f_init.xyz",CI,l,rg,a,h,w,Aw);	
@@ -654,14 +657,13 @@ void initial_state(int *s, int L, int Rg, int Initialstate)
 {
   
 	int i,j,k;
-	int ii, jj;
 	int l2,l3,rg2;
-	int site, st1, st2;
+	int site;
 	int nnp, sread, site_read;
  	long int count=0;
 	int neigh[26];
 	int x,y,z,xn,yn,zn;
-	double fator;
+	double fator,teste;
 
 	l2=L*L;
 	l3=l2*L;
@@ -690,10 +692,10 @@ void initial_state(int *s, int L, int Rg, int Initialstate)
 	if(file_in==1) 
 	{
 
-		sprintf(input_file,"%sgota_3d_L_%d_R_%d_LAST.dsf",CI,l,rg);
+		sprintf(input_file,"%sgota_3d_L_%d_R_%d_a_%d_h_%d_w_%d_fo_%3.2f_LAST.dsf",CI,l,rg,a,h,w,Aw);
 		fp_in = fopen(input_file,"r");
 		
-		if((fscanf(fp_in,"%c %ld %d %f %f %f %f %f %f",&lixo,&tempo_in, &nnp, &x_CM_o, &y_CM_o, &z_CM_o, &Px, &Py, &Pz)!=9)) 
+		if((fscanf(fp_in,"%c %ld %d %lf %lf %lf %lf %lf %lf",&lixo,&tempo_in, &nnp, &x_CM_o, &y_CM_o, &z_CM_o, &Px, &Py, &Pz)!=9)) 
 		{
 			fprintf(stderr,"\n\n ERRO lendo arq de entrada: primeira linha\n\n");
 			exit(-1); 
@@ -716,7 +718,6 @@ void initial_state(int *s, int L, int Rg, int Initialstate)
     	
     	}
 
-
 	}// Fim do IF
 
 //--------------------------------------------------------------------------------------------
@@ -728,7 +729,6 @@ void initial_state(int *s, int L, int Rg, int Initialstate)
 		numsteps=0;
 		confstep=0;
 		count = 0;
-/*		nt=0;*/
 
 		switch (initialstate)
 		{
@@ -2507,7 +2507,7 @@ void save_conf(int num_steps,int iout)
 	{	
 		sprintf(output_file1,"%sgota_3d_L_%d_R_%d_a_%d_h_%d_w_%d_fo_%3.2f_LAST.dsf",CI,l,rg,a,h,w,Aw);
 		flast = fopen(output_file1,"w");
-		fprintf(flast,"# %d %f %f %f %f %f %f\n",num_steps,n_w,x_CM_o, y_CM_o,z_CM_o, Px, Py, Pz);
+		fprintf(flast,"# %d %d %f %f %f %f %f %f\n",num_steps,n_w,x_CM_o, y_CM_o,z_CM_o, Px, Py, Pz);
 
 
 		for(i=0;i<l3;i++) 
