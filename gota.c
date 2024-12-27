@@ -21,8 +21,8 @@
 
 void create_pointers(void);
 void openfiles(void);
-void initialization(void);
-void initial_state(int *s, int l, int rg, int initialstate);
+int initialization(void);
+int initial_state(int *s, int l, int rg, int initialstate);
 void xyz(int *s, int l, int m);
 void dynamics (int *s,int num_steps, double Aw);
 void flip_spin (long site, long new_s);
@@ -38,7 +38,7 @@ void save_conf(int num_steps, int iout);
 *                       Declarando parâmetros da simulação - técnicos                        *
 *********************************************************************************************/
 
-#define mc_steps			100	  	// Número de passos de MC totais
+#define mc_steps			307	  	// Número de passos de MC totais
 #define n_mesure			1   	// Intervalo para salvar medidas
 #define n_teste				99990   // Intervalo para salvar medidas
 
@@ -174,7 +174,7 @@ char lixo;
 int main(int argc,char *argv[])
 {
 
-	int i;
+	int i, i_init;
 
 //--------------------------------------------------------------------------------------------
 //  Lendo os parâmetros de entrada e definindo parametros da conf inicial
@@ -301,7 +301,8 @@ int main(int argc,char *argv[])
 //  Gerando a Configuração inicial
 //--------------------------------------------------------------------------------------------
 
-	initialization();
+	i_init = initialization();
+	printf("\ni_init = %d\n",i_init);
 	xyz(s,l,0);
 	save_conf(0,0);
 
@@ -328,7 +329,7 @@ int main(int argc,char *argv[])
 	c_fv_w = 0;
 	c_fv_o = 0;	
 
-	for (i=0; i<=mc_steps; ++i) 
+	for (i=i_init+1; i<=mc_steps; ++i) 
 	{
 		Gw=GW;
 		Go=GO;
@@ -604,11 +605,11 @@ void openfiles(void)
 /*********************************************************************************************
 *                              Rotina que inicializa o programa                              *
 *********************************************************************************************/
-void initialization(void)
+int initialization(void)
 {
-	int i;
+	int i, i_init;
   
-	initial_state(s,l,rg,initialstate);
+	i_init = initial_state(s,l,rg,initialstate);
   
 	n_w=0;
 	n_o=0;
@@ -648,12 +649,12 @@ void initialization(void)
 	fprintf(fout,"\n"); 
 	fflush(stdout);
 
-  return;
+  return i_init;
 }
 /*********************************************************************************************
 *                          Rotina gera a gota com a distribuição desejada                    *
 *********************************************************************************************/
-void initial_state(int *s, int L, int Rg, int Initialstate)  
+int initial_state(int *s, int L, int Rg, int Initialstate)  
 {
   
 	int i,j,k;
@@ -663,7 +664,7 @@ void initial_state(int *s, int L, int Rg, int Initialstate)
  	long int count=0;
 	int neigh[26];
 	int x,y,z,xn,yn,zn;
-	double fator,teste;
+	double fator,teste,theta_init=M_PI/2;
 
 	l2=L*L;
 	l3=l2*L;
@@ -729,6 +730,7 @@ void initial_state(int *s, int L, int Rg, int Initialstate)
 		numsteps=0;
 		confstep=0;
 		count = 0;
+		tempo_in=-1;
 
 		switch (initialstate)
 		{
@@ -785,8 +787,7 @@ void initial_state(int *s, int L, int Rg, int Initialstate)
 		break;
 
 		case 2 : // We
-
-			fator = pow(2.0,0.666);
+			fator = pow(2.0,2*0.666)/pow(2.0 - 3.0*cos(theta_init) + pow(cos(theta_init),3),0.666);
 			for (k = 0; k < L; ++k)
 				for(j = 0; j < L; ++j)
 					for(i = 0; i < L; ++i)
@@ -794,52 +795,52 @@ void initial_state(int *s, int L, int Rg, int Initialstate)
 
 					long z=h_base;
 					site=k*l2+l*j+i;
-					if ( (i-L/2+1)*(i-L/2+1) + (j-L/2+1)*(j-L/2+1)+(k-z+1)*(k-z+1) <= fator*rg2)
+					if ( (k-z+1) <= (rg2*fator)*(1.0 - cos(theta_init)) )
 		  			{
-		    			if ( f_o == 0.0) //Se for apenas água
-		  				{
-		    				*(s+site)=1;
-		    				count++;
-						}//fim do IF
-						else if ( f_o == 1.0)//Se for apenas óleo
-		  				{
-		    				*(s+site)=2;
-		    				count++;
-						}//fim do ELSE IF
-
-						else //se for uma mistura
+						if ( ((i-L/2+1)*(i-L/2+1) + (j-L/2+1)*(j-L/2+1)) <= pow(fator*rg2,2)*(pow(tan(theta_init),2)/(1.0 + pow(tan(theta_init),2))) )
 						{
-							/*---------------------------------*/ 
-							/*Para gerar uma conf aleatória*/ 
-
-							teste = FRANDOM;
-							if ( (teste>f_o)  )
+							if ( f_o == 0.0) //Se for apenas água
 							{
-
 								*(s+site)=1;
-		    					count++;
-
-							} //fim do IF
-							else if ( (teste<=f_o)  )
+								count++;
+							}//fim do IF
+							else if ( f_o == 1.0)//Se for apenas óleo
 							{
+								*(s+site)=2;
+								count++;
+							}//fim do ELSE IF
 
-		    					*(s+site)=2;
-		    					count++;
+							else //se for uma mistura
+							{
+								/*---------------------------------*/ 
+								/*Para gerar uma conf aleatória*/ 
 
-							} //fim do ELSE IF
-							/*---------------------------------*/
+								teste = FRANDOM;
+								if ( (teste>f_o)  )
+								{
 
+									*(s+site)=1;
+									count++;
+
+								} //fim do IF
+								else if ( (teste<=f_o)  )
+								{
+
+									*(s+site)=2;
+									count++;
+
+								} //fim do ELSE IF
+								/*---------------------------------*/							
+							}//fim do ELSE
+						} //fim do IF
 						
-						}//fim do ELSE
-		  			} //fim do IF
-
+					}//fim do IF
 			}//fim do FOR
 		break;
 
 		}//Fim do SWITCH
 
 	}//Fim do IF
-
 //--------------------------------------------------------------------------------------------
 //   Criando a superfície de pilares
 //--------------------------------------------------------------------------------------------
@@ -859,7 +860,6 @@ void initial_state(int *s, int L, int Rg, int Initialstate)
       		} //fim do FOR
 		}//fim do FOR   
 	} //fim do FOR
-
 //--------------------------------------------------------------------------------------------
 //   Criando a lista de vizinhos
 //--------------------------------------------------------------------------------------------	   
@@ -977,7 +977,6 @@ void initial_state(int *s, int L, int Rg, int Initialstate)
 		yn = (y==L-1)?0:y+1;
 		zn = (z==L-1)?0:z+1;
 		neigh[25] = xn + yn*L + zn*l2;
- 
 //--------------------------------------------------------------------------------------------
 //   Contando o numero de vizinhos de cada tipo
 //--------------------------------------------------------------------------------------------	
@@ -1007,7 +1006,6 @@ void initial_state(int *s, int L, int Rg, int Initialstate)
 	    	}//fim do ELSE IF
 
 		}//fim do FOR
-
 //-----------------------------------------------------------------
 		for (j=t_close_neigh;j<t_neigh ;++j)
 		{
@@ -1032,7 +1030,6 @@ void initial_state(int *s, int L, int Rg, int Initialstate)
 	    	}//fim do ELSE 
 
 		}//fim do FOR
-
 //--------------------------------------------------------------------------------------------
 //   Vendo se o sitio esta na interface
 //--------------------------------------------------------------------------------------------	
@@ -1068,7 +1065,7 @@ void initial_state(int *s, int L, int Rg, int Initialstate)
 
     }//fim do FOR
 
- return;
+ return tempo_in;
 
 }
 /*********************************************************************************************
@@ -1261,27 +1258,33 @@ void dynamics(int *s,int num_steps, double Aw)
 	// Calculate center of mass
 	x_CM = (float) x_CM/(float) count_w;
 	y_CM = (float) y_CM/(float) count_w;
-	z_CM = (float) z_CM/(float) count_w;	
+	z_CM = (float) z_CM/(float) count_w;
+
+	// Adjust the center of mass for periodic boundary conditions
+	x_CM = fmod(x_CM,l);
+	y_CM = fmod(y_CM,l);
+	z_CM = fmod(z_CM,l);		
 	
 	if (num_steps==0)
 	{
 		rx_CM[num_steps]= x_CM;
 		ry_CM[num_steps]= y_CM;
 		rz_CM[num_steps]= z_CM;	
+		printf("Inicializou");
 	}
 	else
 	{
-		rx_CM[num_steps]= rx_CM[num_steps-1] +fmod(x_CM-x_CM_o,l/2);
-		ry_CM[num_steps]= ry_CM[num_steps-1] +fmod(y_CM-y_CM_o,l/2);
-		rz_CM[num_steps]= rz_CM[num_steps-1] +fmod(z_CM-z_CM_o,l/2);
+		rx_CM[num_steps]= rx_CM[num_steps-1] + ((abs(x_CM - x_CM_o) > l/2) ? -fmod(x_CM - x_CM_o,l) : (x_CM - x_CM_o));
+		ry_CM[num_steps]= ry_CM[num_steps-1] + ((abs(y_CM - y_CM_o) > l/2) ? -fmod(y_CM - y_CM_o,l) : (y_CM - y_CM_o));
+		rz_CM[num_steps]= rz_CM[num_steps-1] + ((abs(z_CM - z_CM_o) > l/2) ? -fmod(z_CM - z_CM_o,l) : (z_CM - z_CM_o));
+		//printf("\nt = %d\n",num_steps);
+		//printf("x_CM = %lf, y_CM = %lf, z_CM = %lf\n", x_CM, y_CM, z_CM);
+		//printf("Dx = %lf, Dy = %lf, Dz = %lf\n",(abs(x_CM - x_CM_o) > l/2) ? -fmod(x_CM - x_CM_o,l) : (x_CM - x_CM_o), (abs(y_CM - y_CM_o) > l/2) ? -fmod(y_CM - y_CM_o,l) : (y_CM - y_CM_o), (abs(z_CM - z_CM_o) > l/2) ? -fmod(z_CM - z_CM_o,l) : (z_CM - z_CM_o));
+		//printf("Dx = %lf, Dy = %lf, Dz = %lf\n", x_CM-x_CM_o, y_CM-y_CM_o, z_CM-z_CM_o);
+		//printf("dx = %lf, dy = %lf, dz = %lf\n", -fmod(x_CM-x_CM_o,l/2), -fmod(y_CM-y_CM_o,l/2), fmod(z_CM-z_CM_o,l/2));
 	}
 	
 	// fprintf(fr2, "%d %f %f %f\n", num_steps, rx_CM[num_steps],ry_CM[num_steps],rz_CM[num_steps]);
-	
-	// Adjust the center of mass for periodic boundary conditions
-	x_CM = fmod(x_CM,l);
-	y_CM = fmod(y_CM,l);
-	z_CM = fmod(z_CM,l);	
 	
 	x_CM_o=x_CM;
 	y_CM_o=y_CM;
@@ -1303,6 +1306,10 @@ void dynamics(int *s,int num_steps, double Aw)
 		Pz=0; // 2D polarization
 
 		P = sqrt(Px*Px + Py*Py + Pz*Pz);
+		if (1 == 1) {
+			printf("Px = %lf, Py = %lf, Pz = %lf\n", Px, Py, Pz);
+			printf("rx_CM(t-1) = %lf\n", rx_CM[num_steps-dt]);
+			}
 	}
 
 	for(j = 0; j < t_vol ; ++j)
