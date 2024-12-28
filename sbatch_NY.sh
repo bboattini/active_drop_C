@@ -16,4 +16,5 @@ h=$4
 w=$5
 fo=$6
 CI=$7
-./gota.out -L ${L} -R ${R} -a ${a} -h ${h} -w ${w} -fo ${fo} -CI ${CI} -s  12345567
+dt=$8
+./gota.out -L ${L} -R ${R} -a ${a} -h ${h} -w ${w} -dt ${dt} -fo ${fo} -CI ${CI} -s  12345567

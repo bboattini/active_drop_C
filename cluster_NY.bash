@@ -19,11 +19,14 @@ for w in 5
 
 for fo in 0.1 1 10
 	do
+	
+for dt in 1
+	do		
 
 for CI in 1 2
 	do
 # Create the directory
-dir_name="dados_${CI}_L_${L}_R_${R}_a_${a}_h_${h}_w_${w}_fo_${fo}"
+dir_name="dados${dt}_${CI}_L_${L}_R_${R}_a_${a}_h_${h}_w_${w}_fo_${fo}"
 mkdir -p $dir_name
 
 # Move the executable to the directory
@@ -38,12 +41,13 @@ cd $dir_name
 # =                               Rodando simulação                            = 
 #===============================================================================
 
-#./gota.out -L ${L} -R ${R} -a ${a} -h ${h} -w ${w} -fo ${fo} -CI ${CI} -s  12345567
-sbatch ./Ber${CI}_${a}_${h}_${fo}.sh ${L} ${R} ${a} ${h} ${w} ${fo} ${CI}
+#./gota.out -L ${L} -R ${R} -a ${a} -h ${h} -w ${w} -dt ${dt} -fo ${fo} -CI ${CI} -s  12345567
+sbatch ./Ber${CI}_${a}_${h}_${fo}.sh ${L} ${R} ${a} ${h} ${w} ${dt} ${fo} ${CI}
 
 # Change back to the original directory
 cd -
 
+done
 done
 done
 done
