@@ -44,7 +44,7 @@ def file_crawler(path = PATH):
     for item in items:
         full_item_path = os.path.join(path, item)
         if os.path.isdir(full_item_path):
-            if 'dados_' in item:
+            if 'dados1_' in item:
                 # List the files inside this directory
                 files = os.listdir(full_item_path)
                 #print(files)

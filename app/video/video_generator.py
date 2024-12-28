@@ -22,21 +22,30 @@ def video_maker():
     w = 5
     h_base = 3
 
-    state = input("Digite o estado desejado: (WE/CB)")
+    state = input("Digite o estado desejado: (WE/CB/W2)")
+
     fo_values = input("Digite os valores de fo desejado: ")
     # Transform the values into a list of floats
     fo_values = [i for i in fo_values.split()]
+
+    a_values = input("Digite os valores de a desejado: ")
+    # Transform the values into a list of floats
+    a_values = [i for i in a_values.split()]
 
     config_dict = af.file_crawler()['base']
     # filter all the config files that has the selected state
     files_to_read = [f for f in config_dict if f'{state}_' in f]
     # filter all the config files that has the selected fo in the list fo_values
     files_to_read = [f for f in files_to_read if any(f'fo_{fo}' in f for fo in fo_values)]
+    # filter all the config files that has the selected a in the list fo_values
+    files_to_read = [f for f in files_to_read if any(f'a_{a}' in f for a in a_values)]
     config_dict = files_to_read
 
+    # measures_dict = af.file_crawler()['measures']
     measures_dict = af.file_crawler()['measures']
     files_to_read = [f for f in measures_dict if f'{state}_' in f]
     files_to_read = [f for f in files_to_read if any(f'fo_{fo}' in f for fo in fo_values)]
+    files_to_read = [f for f in files_to_read if any(f'a_{a}' in f for a in a_values)]
     measure_file = files_to_read
 
     # Create a subplot with 2 rows and 6 columns
@@ -52,7 +61,8 @@ def video_maker():
 
     file_index = input("Digite o número do arquivo que deseja visualizar: ")'''
     for f_index in range(len(config_dict)):
-        t, V, Vw, E, bxw, byw, rxw, ryw, txw, tyw, vbw, vrw, vpw, xm_CM, ym_CM, zm_CM = np.loadtxt(measure_file[f_index], unpack=True)
+        t, V, Vw, E, bxw, byw, rxw, ryw, txw, tyw, vbw, d1, d2, xm_CM, ym_CM, zm_CM = np.loadtxt(measure_file[f_index], unpack=True)
+        # t, xm_CM, ym_CM, zm_CM = np.loadtxt(measure_file[f_index], unpack=True)
         d_wind = t[1] - t[0]
 
         file = config_dict[f_index]
@@ -65,7 +75,7 @@ def video_maker():
         plt.suptitle(f"h={h} a={a} "+r"$\mu$"+f"={fo} {state}")
 
         #Create movie folder inside the current working directory
-        movie_path = f"{PATH}movie100{state}_h{h}_a{a}_fo{fo}"
+        movie_path = f"{PATH}scshot{state}_h{h}_a{a}_fo{fo}"
         if not os.path.exists(movie_path):
             os.makedirs(movie_path)
 
@@ -90,6 +100,8 @@ def video_maker():
         MAX = 1000 #should be the mcs_MAX/d_wind
         start_line = 20  # replace with the line number you want to start from
         time = -1
+        xm_CM_o = 120
+        ym_CM_o = 120
         mcs = 0
         with open(file, 'r') as data:
             for row in islice(data, start_line, None):
@@ -97,17 +109,19 @@ def video_maker():
                     if time % interval == 0 and time > -1:
                         # Iterate over the range
                         for z in range(h + h_base):
-                            y = ym_CM[mcs]
+                            #y = ym_CM[mcs]
+                            y = ym_CM_o
                             for x in range(l):
                                 site = z*l2 + y*l + x
-                                if z < h_base or (x % (w + a) < w and y % (w + a) < w):
-                                #if z < h_base or (x % (w + a) < w):
+                                #if z < h_base or (x % (w + a) < w and y % (w + a) < w):
+                                if z < h_base or (x % (w + a) < w):
                                     y_fix[x, z] = light_grey  # add a gray pixel
-                            x = xm_CM[mcs]
+                            #x = xm_CM[mcs]
+                            x = xm_CM_o
                             for y in range(l):
                                 site = z*l2 + y*l + x
-                                if z < h_base or (x % (w + a) < w and y % (w + a) < w):
-                                #if z < h_base or (y % (w + a) < w):
+                                #if z < h_base or (x % (w + a) < w and y % (w + a) < w):
+                                if z < h_base or (y % (w + a) < w):
                                     x_fix[y, z] = light_grey    
                         for x in range(l):
                             for y in range(l):
@@ -140,6 +154,8 @@ def video_maker():
                         y_fix = np.zeros((l, l, 3), dtype=np.uint8)
                         x_fix = np.zeros((l, l, 3), dtype=np.uint8)
                         mcs = int(int(row.split()[2])/d_wind)
+                        xm_CM_o = int(int(row.split()[4]))
+                        ym_CM_o = int(int(row.split()[6]))
                     time += 1
 
                 elif row.strip() and mcs%interval == 0:
@@ -148,11 +164,11 @@ def video_maker():
                     x = site % l
                     y = (site // l) % l
                     z = site // (l * l)
-                    if x == int(xm_CM[mcs]):  # adjust this value as needed
+                    if x == int(xm_CM_o):  # adjust this value as needed
                         base[x, y] = red
                         if spin == 1:
                             x_fix[y, z] = light_blue
-                    if y == int(ym_CM[mcs]):  # adjust this value as needed
+                    if y == int(ym_CM_o):  # adjust this value as needed
                         base[x, y] = red
                         if spin == 1:
                             y_fix[x, z] = light_blue
@@ -193,10 +209,16 @@ def video_render(movie_path=None):
     writer.close()
     print(f"\n----------------- End -----------------\n")
 
+def fo_from_file (File):
+  fs = File.split("/")[-2].split("_")
+  fl = len(fs)
+  pad = fs[-1]
+  return pad # return state value
+
 if __name__ == '__main__':
     # DEACTIVATE CONDA TO RENDER THE VIDEO
-    #video_render('/home/bernardo/workspace/ACTIVE_WETTING/greene_videos_janela10/app/video/movieCB_h10_a5_fo1')
-    #video_render('/home/bernardo/workspace/ACTIVE_WETTING/greene_videos_janela10/app/video/movieCB_h10_a11_fo1')
-    #video_render('/home/bernardo/workspace/ACTIVE_WETTING/greene_videos_janela10/app/video/movieCB_h10_a5_fo10')
-    #video_render('/home/bernardo/workspace/ACTIVE_WETTING/greene_videos_janela10/app/video/movieCB_h10_a11_fo10')
+    #video_render('/home/bernardo/workspace/ACTIVE_WETTING/dados_greene_final1/app/video/movieCB_h10_a5_fo10')
+    #video_render('/home/bernardo/workspace/ACTIVE_WETTING/dados_greene_final1/app/video/movieCB_h10_a5_fo5')
+    #video_render('/home/bernardo/workspace/ACTIVE_WETTING/dados_greene_final1/app/video/movieWE_h10_a5_fo10')
+    #video_render('/home/bernardo/workspace/ACTIVE_WETTING/dados_greene_final1/app/video/movieWE_h10_a5_fo5')
     video_maker()

@@ -23,7 +23,7 @@ def Track_plotter_2D():
     file_index = input("Digite o número do arquivo que deseja visualizar: ")
 
     measure_file = measures_dict[int(file_index)]
-    t, V, Vw, E, bxw, byw, rxw, ryw, txw, tyw, vbw, vrw, vpw, xm_CM, ym_CM, zm_CM = np.loadtxt(measure_file, unpack=True)
+    t, V, Vw, E, bxw, byw, rxw, ryw, txw, tyw, vbw, nulo1, nulo2, xm_CM, ym_CM, z_CM = np.loadtxt(measure_file, unpack=True)
 
     B_init = (bxw[0] + byw[0])/2
     Bx_stat = np.mean(bxw[int(len(bxw)//2):])
@@ -63,29 +63,45 @@ def Track_plotter_2D():
 
     lc = mcoll.LineCollection(segments, linewidths=0.5, colors=cmap(norm(R[:-1,0])))
     ax.add_collection(lc)
-    ax.set_xlabel("X")
+
+    # Set specific ticks for the x-axis and y-axis
+    ax.set_xticks([(xmin//l)*l, ((xmin + xmax)/2*l)*l, (xmax//l)*l])
+    ax.set_yticks([(ymin//l)*l, ((ymin + ymax)/2*l)*l, (ymax//l)*l])
+
+    # Optionally, set the tick labels if you want custom labels
+    #ax.set_xticklabels([f"{(xmin//l)*l:.0f}", f"{((xmin + xmax) / 2*l)*l:.2f}L", f"{(xmax//l)*l:.0f}L"])
+    #ax.set_yticklabels([f"{(xmin//l)*l:.0f}", f"{((ymin + ymax) / 2*l)*l:.2f}L", f"{(ymax//l)*l:.0f}L"])
+
+    ax.set_xlabel("x")
     if (xmax) < l and (xmin) > 0:
         ax.set_xlim(0, l)
+        ax.set_xticks([0,l/2, l])
+        ax.set_xticklabels([0,"0.5L","L"])
         flag = False
     else:
         ax.set_xlim(xmin , xmax)
+        ax.set_xticks([int((xmin//l)*l), ((xmin + xmax)//(2*l))*l, (xmax//l)*l])
+        ax.set_xticklabels([f"{int((xmin//l))}L",f"{int(((xmin + xmax)/(2*l)))}L",f"{int((xmax//l))}L"])
         flag = True
-    ax.set_ylabel("Y")
+    ax.set_ylabel("y")
     if (ymax) < l and (ymin) > 0:
-        ax.set_ylim(0, l)
+        ax.set_ylim(0, l+1)
+        ax.set_yticks([0,l/2, l])
+        ax.set_yticklabels([0,"0.5L","L"])
     else:
         ax.set_ylim(ymin , ymax)
-
+        ax.set_yticks([int((ymin//l)*l), ((ymin + ymax)//(2*l))*l, (ymax//l)*l])
+        ax.set_yticklabels([f"{int((ymin//l))}L",f"{int(((ymin + ymax)/(2*l)))}L",f"{int((ymax//l))}L"])
     G_dict = {}
-    G_dict['5'] = 'A'
-    G_dict['11'] = 'B' 
+    G_dict['5'] = '5'
+    G_dict['11'] = '11' 
 
     CI_dict = {}
     CI_dict['WE'] = 'W'
     CI_dict['CB'] = 'D'
 
-    fig.colorbar(lc, label='t', ax=ax)
-    ax.set_title(f"2D Track point {G_dict[str(a)]} CI={CI_dict[state]} "+r"$\mu$="+f"{fo}")
+    fig.colorbar(lc, label=r't', ax=ax)
+    ax.set_title(f"a={G_dict[str(a)]} CI={CI_dict[state]} "+r"$\mu$="+f"{fo}")
 
     # Create a circle
     circle_init = Circle((xm_CM[0], ym_CM[0]), B_init, color=cmap(norm(0)), fill=True)
@@ -94,6 +110,7 @@ def Track_plotter_2D():
     # Add the circle to the axes
     ax.add_patch(circle_init)
     ax.add_patch(circle)
+    fig.tight_layout()
 
     plt.savefig(f"{PATH}2D_{state}_CM_a-{a}_h-{h}_fo-{fo}.jpeg")
 
